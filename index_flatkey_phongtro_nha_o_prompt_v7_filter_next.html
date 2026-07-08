@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Auto Comment Phòng Trọ / Nhà Ở API - By Trường Saker</title>
+  <style>
+    :root {
+      --bg: #f4f6fb;
+      --surface: #ffffff;
+      --surface-soft: #f8faff;
+      --text: #111827;
+      --muted: #667085;
+      --subtle: #98a2b3;
+      --border: #e4e7ec;
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --primary-soft: #eef2ff;
+      --success: #15803d;
+      --warning: #b45309;
+      --warning-soft: #fff7ed;
+      --danger: #dc2626;
+      --danger-soft: #fef2f2;
+      --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05);
+      --shadow-md: 0 12px 28px rgba(16, 24, 40, 0.10);
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font);
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(79,70,229,0.12), transparent 30%),
+        radial-gradient(circle at top right, rgba(245,158,11,0.12), transparent 28%),
+        var(--bg);
+    }
+
+    button, input, textarea, select { font: inherit; }
+    button { -webkit-tap-highlight-color: transparent; }
+    button:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible,
+    select:focus-visible {
+      outline: 3px solid rgba(79, 70, 229, 0.22);
+      outline-offset: 2px;
+    }
+
+    .app-shell {
+      width: min(100%, 860px);
+      margin: 0 auto;
+      padding: 22px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.96);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      padding: 20px;
+      backdrop-filter: blur(14px);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      align-items: center;
+      padding-bottom: 18px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    .brand { display: flex; gap: 12px; align-items: center; min-width: 0; }
+    .brand-logo {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      color: #fff;
+      box-shadow: 0 10px 22px rgba(79, 70, 229, 0.25);
+      font-size: 22px;
+      flex: 0 0 auto;
+    }
+    .brand h1 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      color: #24205d;
+    }
+    .brand p {
+      margin: 4px 0 0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .pro-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      color: #7c2d12;
+      background: #ffedd5;
+      border: 1px solid #fed7aa;
+      border-radius: 999px;
+      padding: 7px 11px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+
+    .api-panel {
+      display: grid;
+      gap: 12px;
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+
+    .api-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(160px, .7fr);
+      gap: 12px;
+      align-items: end;
+    }
+
+    .api-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .status-line {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .status-line.ok { color: var(--success); font-weight: 700; }
+    .status-line.warn { color: var(--warning); font-weight: 700; }
+
+    .btn {
+      border: 1px solid transparent;
+      border-radius: 11px;
+      padding: 10px 13px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform .14s ease, background .14s ease, border-color .14s ease, color .14s ease, opacity .14s ease;
+      user-select: none;
+      min-height: 40px;
+    }
+    .btn:hover:not(:disabled) { transform: translateY(-1px); }
+    .btn:active:not(:disabled) { transform: translateY(0); }
+    .btn:disabled { cursor: not-allowed; opacity: .62; }
+    .btn-primary { color: #fff; background: var(--primary); box-shadow: 0 10px 18px rgba(79, 70, 229, .18); }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
+    .btn-soft { color: var(--primary); background: var(--primary-soft); border-color: #d9ddff; }
+    .btn-soft:hover:not(:disabled) { background: #e0e7ff; }
+    .btn-muted { color: #475467; background: #fff; border-color: var(--border); }
+    .btn-muted:hover:not(:disabled) { background: #f9fafb; }
+    .btn-danger { color: var(--danger); background: var(--danger-soft); border-color: #fecaca; }
+    .btn-danger:hover:not(:disabled) { background: #fee2e2; }
+    .btn-sm { min-height: 32px; padding: 7px 10px; border-radius: 9px; font-size: 12px; }
+
+    .form-grid { display: grid; gap: 14px; }
+    .form-group { display: grid; gap: 7px; }
+    .label-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    label {
+      color: #475467;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .hint { color: var(--subtle); font-size: 12px; line-height: 1.4; }
+    .counter { color: var(--subtle); font-size: 11px; white-space: nowrap; }
+
+    textarea,
+    input[type="text"],
+    input[type="password"],
+    select {
+      width: 100%;
+      color: var(--text);
+      background: #fff;
+      border: 1px solid #d0d5dd;
+      border-radius: 13px;
+      padding: 11px 12px;
+      font-size: 14px;
+      line-height: 1.5;
+      box-shadow: 0 1px 0 rgba(16, 24, 40, 0.02);
+      transition: border-color .14s ease, box-shadow .14s ease;
+    }
+    textarea:focus,
+    input[type="text"]:focus,
+    input[type="password"]:focus,
+    select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(79, 70, 229, .09);
+      outline: none;
+    }
+    textarea::placeholder, input::placeholder { color: #98a2b3; }
+    textarea { min-height: 96px; resize: vertical; }
+    #productLinkInput { min-height: 78px; }
+
+    .field-status {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      min-height: 16px;
+    }
+    .link-preview {
+      color: #475467;
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .link-preview.warn { color: var(--warning); }
+    .link-preview.ok { color: var(--success); }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1.7fr 1fr;
+      gap: 10px;
+      margin-top: 2px;
+    }
+    #generateBtn { min-height: 48px; font-size: 15px; }
+
+    .output-box {
+      margin-top: 16px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      background: var(--surface-soft);
+    }
+    .output-header {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 13px;
+      border-bottom: 1px solid var(--border);
+    }
+    .output-title { color: var(--primary); font-size: 13px; font-weight: 900; }
+    .output-actions { display: flex; gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
+    #output {
+      min-height: 90px;
+      padding: 16px;
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.68;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    #output.placeholder { color: var(--subtle); }
+    #output.loading { color: var(--primary); }
+    #output.error { color: var(--danger); }
+
+    .toast-host {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 90;
+      display: grid;
+      gap: 10px;
+      pointer-events: none;
+    }
+    .toast {
+      pointer-events: auto;
+      width: min(360px, calc(100vw - 36px));
+      color: #344054;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-left: 5px solid var(--primary);
+      border-radius: 14px;
+      box-shadow: var(--shadow-md);
+      padding: 12px 13px;
+      font-size: 13px;
+      line-height: 1.45;
+      animation: toastIn .18s ease-out;
+    }
+    .toast.success { border-left-color: var(--success); }
+    .toast.error { border-left-color: var(--danger); }
+    .toast.warning { border-left-color: #f59e0b; }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 720px) {
+      .app-shell { padding: 12px; }
+      .card { padding: 15px; border-radius: 16px; }
+      .hero, .api-grid, .actions { grid-template-columns: 1fr; }
+      .api-actions { justify-content: flex-start; }
+      .output-header { align-items: flex-start; flex-direction: column; }
+      .brand h1 { font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <section class="card">
+      <header class="hero">
+        <div class="brand">
+          <div class="brand-logo" aria-hidden="true">🤖</div>
+          <div>
+            <h1>Auto Comment Phòng Trọ / Nhà Ở</h1>
+            <p>Tạo bình luận tự nhiên khi khách cần thuê hoặc mua phòng trọ, nhà ở bằng API Chat Completions.</p>
+          </div>
+        </div>
+        <span class="pro-badge">⚡ API MODE</span>
+      </header>
+
+      <section class="api-panel" aria-label="Cấu hình API">
+        <div class="api-grid">
+          <div class="form-group">
+            <label for="apiKeyInput">API Key</label>
+            <input type="password" id="apiKeyInput" autocomplete="off" placeholder="sk-YOUR_API_KEY">
+            <div class="status-line" id="apiStatus">Chưa nhập API key</div>
+          </div>
+
+          <div class="form-group">
+            <label for="modelInput">Model</label>
+            <input type="text" id="modelInput" list="modelOptions" value="gpt-5.4-mini" placeholder="Chọn hoặc nhập model GPT khác">
+            <datalist id="modelOptions">
+              <option value="gpt-4.1-mini"></option>
+              <option value="gpt-4o"></option>
+              <option value="gpt-4o-mini"></option>
+              <option value="gpt-5-mini"></option>
+              <option value="gpt-5.1"></option>
+              <option value="gpt-5.3-codex-spark"></option>
+              <option value="gpt-5.4"></option>
+              <option value="gpt-5.4-fk-cx"></option>
+              <option value="gpt-5.4-mini"></option>
+              <option value="gpt-4.1"></option>
+              <option value="gpt-4.1-nano"></option>
+              <option value="o4-mini"></option>
+              <option value="o3-mini"></option>
+            </datalist>
+            <div class="hint">Có thể chọn gợi ý hoặc tự nhập model khác nếu API key hỗ trợ.</div>
+          </div>
+        </div>
+
+        <div class="status-line">Endpoint mặc định đang dùng: https://console.flatkey.ai/v1/chat/completions</div>
+
+        <div class="api-actions">
+          <button class="btn btn-soft btn-sm" id="toggleKeyBtn" type="button">👁️ Hiện key</button>
+          <button class="btn btn-primary btn-sm" id="saveApiBtn" type="button">💾 Lưu API</button>
+          <button class="btn btn-danger btn-sm" id="clearApiBtn" type="button">Xoá API</button>
+        </div>
+      </section>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <div class="label-row">
+            <label for="articleInput">Nội dung bài viết khách cần thuê/mua</label>
+            <button class="btn btn-soft btn-sm" id="pasteBtn" type="button">📋 Dán nội dung</button>
+          </div>
+          <textarea id="articleInput" maxlength="6000" placeholder="Dán nội dung bài khách cần thuê phòng, thuê nhà, mua nhà hoặc tìm chỗ ở vào đây..."></textarea>
+          <div class="field-status">
+            <span class="hint">API sẽ bám sát bài gốc, so khớp khu vực/ngân sách/loại nhà; nếu không trùng địa chỉ sẽ chuyển sang tư vấn tham khảo.</span>
+            <span class="counter" id="articleCounter">0/6000</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="productNameInput">Thông tin phòng/nhà đang có <span aria-hidden="true">*</span></label>
+          <textarea id="productNameInput" maxlength="1200" required placeholder="VD: Phòng/nhà khu vực A, giá 2tr5 hoặc nhà bán khu vực B giá X, diện tích, tiện ích, cọc/giấy tờ, tình trạng còn phòng/còn bán..."></textarea>
+          <div class="field-status">
+            <span class="hint">Bắt buộc nhập khu vực, giá, diện tích/tiện ích và điều kiện thuê/mua để comment có thông tin thật.</span>
+            <span class="counter" id="productCounter">0/1200</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="productLinkInput">Thông tin liên hệ <span aria-hidden="true">*</span></label>
+          <textarea id="productLinkInput" required placeholder="VD: SĐT/Zalo 09xxxxxxx, ib trực tiếp Facebook, hoặc rep comment này để mình gửi thông tin."></textarea>
+          <div class="field-status">
+            <span class="link-preview" id="linkStatus">Chưa có thông tin liên hệ</span>
+            <span class="counter" id="linkCounter">0 ký tự</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="toneSelect">🎭 Phong cách bình luận tư vấn</label>
+          <select id="toneSelect">
+            <option value="lịch sự, tự nhiên, chuyên nghiệp, giống người tư vấn phòng trọ/nhà ở thật">🏠 Tư vấn tự nhiên</option>
+            <option value="chuyên nghiệp, ngắn gọn, giống chủ phòng hoặc môi giới uy tín">💼 Chủ phòng / môi giới uy tín</option>
+            <option value="thân thiện, dễ gần, phản hồi nhẹ nhàng không gây phiền">🌱 Thân thiện & dễ gần</option>
+            <option value="rõ ràng, thực tế, tập trung vào khu vực, giá, diện tích, tiện ích, cọc/giấy tờ và thời gian vào ở">📌 Rõ ràng thực tế</option>
+            <option value="gợi ý mềm, có phòng/nhà phù hợp thì mời inbox, không spam và không ép khách">📩 Gợi ý inbox mềm</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="commentModeSelect">🧭 Logic trả lời</label>
+          <select id="commentModeSelect">
+            <option value="auto">Tự nhận diện khách cần thuê/mua</option>
+            <option value="rent">Khách cần thuê phòng/nhà</option>
+            <option value="buy">Khách cần mua nhà</option>
+            <option value="ask_more">Hỏi thêm nhu cầu còn thiếu</option>
+          </select>
+          <div class="hint">Web sẽ lọc bài trước: bài người cho thuê/bán trả về next, bài khách đang cần thuê/mua mới tạo bình luận.</div>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" id="generateBtn" type="button">✨ Tạo bình luận</button>
+          <button class="btn btn-muted" id="clearBtn" type="button">🔄 Làm mới</button>
+        </div>
+      </div>
+
+      <section class="output-box" aria-live="polite">
+        <div class="output-header">
+          <span class="output-title">✨ Kết quả bình luận tư vấn</span>
+          <div class="output-actions">
+            <button class="btn btn-soft btn-sm" id="copyBtn" type="button">Sao chép</button>
+            <button class="btn btn-muted btn-sm" id="saveHistoryBtn" type="button">Lưu lịch sử</button>
+          </div>
+        </div>
+        <div id="output" class="placeholder">Bình luận tư vấn sẽ xuất hiện tại đây...</div>
+      </section>
+    </section>
+  </main>
+
+  <div class="toast-host" id="toastHost" aria-live="polite"></div>
+
+  <script>
+    'use strict';
+
+    const APP = {
+      defaultApiUrl: 'https://console.flatkey.ai/v1/chat/completions',
+      defaultModel: 'gpt-5.4-mini',
+      storage: {
+        apiKey: 'truong_ai_commenter_flatkey_api_key_v1',
+        model: 'truong_ai_commenter_model_v1',
+        history: 'truong_ai_commenter_history_v2',
+        draft: 'truong_ai_commenter_draft_v2'
+      }
+    };
+
+    const $ = (selector, root = document) => root.querySelector(selector);
+
+    const els = {
+      apiKeyInput: $('#apiKeyInput'),
+      modelInput: $('#modelInput'),
+      apiStatus: $('#apiStatus'),
+      toggleKeyBtn: $('#toggleKeyBtn'),
+      saveApiBtn: $('#saveApiBtn'),
+      clearApiBtn: $('#clearApiBtn'),
+      articleInput: $('#articleInput'),
+      productNameInput: $('#productNameInput'),
+      productLinkInput: $('#productLinkInput'),
+      toneSelect: $('#toneSelect'),
+      commentModeSelect: $('#commentModeSelect'),
+      generateBtn: $('#generateBtn'),
+      clearBtn: $('#clearBtn'),
+      pasteBtn: $('#pasteBtn'),
+      copyBtn: $('#copyBtn'),
+      saveHistoryBtn: $('#saveHistoryBtn'),
+      output: $('#output'),
+      articleCounter: $('#articleCounter'),
+      productCounter: $('#productCounter'),
+      linkCounter: $('#linkCounter'),
+      linkStatus: $('#linkStatus'),
+      toastHost: $('#toastHost')
+    };
+
+    function safeJsonParse(value, fallback) {
+      try { return JSON.parse(value) ?? fallback; }
+      catch { return fallback; }
+    }
+
+    function loadStorage(key, fallback) {
+      return safeJsonParse(localStorage.getItem(key), fallback);
+    }
+
+    function saveStorage(key, value) {
+      localStorage.setItem(key, JSON.stringify(value));
+    }
+
+    function removeStorage(key) {
+      localStorage.removeItem(key);
+    }
+
+    function toast(message, type = 'success') {
+      const item = document.createElement('div');
+      item.className = `toast ${type}`;
+      item.textContent = message;
+      els.toastHost.appendChild(item);
+      setTimeout(() => item.remove(), 3300);
+    }
+
+    function setOutput(message, className = '') {
+      els.output.textContent = message;
+      els.output.className = className;
+    }
+
+    function cleanApiKey(value) {
+      return String(value || '').trim().replace(/^Bearer\s+/i, '');
+    }
+
+    function getErrorText(error) {
+      if (!error) return '';
+      if (typeof error === 'string') return error;
+      if (error.message) return error.message;
+      try { return JSON.stringify(error); } catch { return String(error); }
+    }
+
+    function stripAiWrapper(text) {
+      return String(text || '')
+        .replace(/^```(?:text|md|markdown)?/i, '')
+        .replace(/```$/i, '')
+        .replace(/^\s*["“”']|["“”']\s*$/g, '')
+        .trim();
+    }
+
+    function extractResponseText(data) {
+      if (typeof data === 'string') return data;
+
+      const messageContent = data?.choices?.[0]?.message?.content;
+      if (typeof messageContent === 'string') return messageContent;
+
+      if (Array.isArray(messageContent)) {
+        return messageContent
+          .map(part => part?.text || part?.content || '')
+          .join('')
+          .trim();
+      }
+
+      return data?.content || data?.text || data?.message?.content || '';
+    }
+
+    async function readErrorBody(response) {
+      const contentType = response.headers.get('content-type') || '';
+      try {
+        if (contentType.includes('application/json')) {
+          const json = await response.json();
+          return json?.error?.message || json?.message || JSON.stringify(json);
+        }
+        return await response.text();
+      } catch {
+        return `${response.status} ${response.statusText}`;
+      }
+    }
+
+    async function callChatCompletions({ apiUrl, apiKey, model, prompt }) {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'user', content: prompt }
+          ]
+        })
+      });
+
+      if (!response.ok) {
+        const errBody = await readErrorBody(response);
+        throw new Error(`${response.status} ${response.statusText}: ${errBody}`);
+      }
+
+      const data = await response.json();
+      return extractResponseText(data);
+    }
+
+    function normalizeContactInfo(raw) {
+      return String(raw || '')
+        .split(/\n+/)
+        .map(line => line.trim())
+        .filter(Boolean)
+        .join(' | ')
+        .trim();
+    }
+
+    function updateCounters() {
+      els.articleCounter.textContent = `${els.articleInput.value.length}/6000`;
+      els.productCounter.textContent = `${els.productNameInput.value.length}/1200`;
+
+      const contactInfo = normalizeContactInfo(els.productLinkInput.value);
+      els.linkCounter.textContent = `${contactInfo.length} ký tự`;
+
+      if (!contactInfo) {
+        els.linkStatus.textContent = 'Bắt buộc nhập thông tin liên hệ';
+        els.linkStatus.className = 'link-preview';
+      } else if (/\b(?:zalo|sđt|sdt|điện thoại|dien thoai|phone|ib|inbox|facebook|fb|rep|comment|bình luận|binh luan)\b/i.test(contactInfo) || /(?:\+?84|0)\d{8,10}\b/.test(contactInfo)) {
+        els.linkStatus.textContent = 'Thông tin liên hệ sẵn sàng để chèn tự nhiên';
+        els.linkStatus.className = 'link-preview ok';
+      } else {
+        els.linkStatus.textContent = 'Sẽ dùng như ghi chú liên hệ, không kiểm tra định dạng link';
+        els.linkStatus.className = 'link-preview warn';
+      }
+    }
+
+    function updateApiStatus() {
+      const apiKey = cleanApiKey(els.apiKeyInput.value);
+      if (!apiKey) {
+        els.apiStatus.textContent = 'Chưa nhập API key';
+        els.apiStatus.className = 'status-line warn';
+        return;
+      }
+
+      const masked = apiKey.length > 10
+        ? `${apiKey.slice(0, 6)}...${apiKey.slice(-4)}`
+        : 'Đã nhập API key';
+
+      els.apiStatus.textContent = `✅ API key sẵn sàng: ${masked}`;
+      els.apiStatus.className = 'status-line ok';
+    }
+
+    function buildClassificationPrompt({ article }) {
+      return `Bạn là bộ lọc bài viết Facebook cho công cụ auto comment phòng trọ/nhà ở.
+
+Nhiệm vụ: Dựa DUY NHẤT vào nội dung bài viết gốc, phân loại xem có nên trả lời hay bỏ qua.
+
+Nội dung bài viết gốc:
+"${article}"
+
+Quy tắc phân loại:
+1. Trả về "next" nếu người đăng là người CHO THUÊ, người BÁN, chủ phòng, môi giới đang đăng tin có phòng/căn/nhà, đăng giá thuê, đăng thông tin còn phòng, nhận khách, cho thuê, sang nhượng, bán nhà, bán căn hộ, quảng cáo phòng/nhà.
+2. Trả về "reply" nếu người đăng là khách đang CẦN THUÊ, CẦN MUA, TÌM PHÒNG, TÌM NHÀ, tìm trọ, tìm căn hộ, hỏi ai biết phòng, cần ở ghép, cần thuê gần khu vực nào đó, cần mua nhà/căn nào đó.
+3. Trả về "next" nếu bài không rõ nhu cầu, bài spam, bài tuyển môi giới, bài hỏi ngoài chủ đề, hoặc không chắc chắn.
+4. Không dùng thông tin phòng/nhà đang có để phân loại. Chỉ nhìn nội dung bài gốc.
+
+Chỉ được trả về đúng 1 từ viết thường: next hoặc reply.
+Không giải thích, không thêm dấu câu, không xuống dòng.`;
+    }
+
+    function parseArticleClassification(raw) {
+      const value = String(raw || '')
+        .toLowerCase()
+        .replace(/[`"'“”‘’.,:;!?()\[\]{}]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      if (!value) return 'next';
+      if (/\bnext\b/.test(value)) return 'next';
+      if (/\breply\b/.test(value)) return 'reply';
+      return 'next';
+    }
+
+    function buildPrompt({ article, extraInfo, contactInfo, selectedTone, commentMode }) {
+      const contactInstruction = `- Thông tin liên hệ bắt buộc phải dùng tự nhiên: ${contactInfo}`;
+
+      const modeInstruction = {
+        auto: 'Tự nhận diện khách đang cần THUÊ hay cần MUA. Sau đó so khớp nhu cầu trong bài gốc với thông tin phòng/nhà đang có trước khi viết bình luận.',
+        rent: 'Khách đang cần thuê phòng/nhà. Trả lời như chủ phòng/người có phòng, nhưng phải so khớp khu vực, ngân sách, số người ở và loại phòng trước. Nếu chưa khớp thì chỉ gợi ý tham khảo.',
+        buy: 'Khách đang cần mua nhà/phòng/căn hộ. Trả lời như người bán/tư vấn nhà ở, nhưng phải so khớp khu vực, ngân sách, loại nhà và giấy tờ trước. Nếu chưa khớp thì chỉ mời tham khảo.',
+        landlord: 'Đóng vai chủ phòng/người bán có phòng/nhà. Bình luận lịch sự, có thông tin thật, không nhận là đúng nhu cầu nếu dữ liệu bị lệch.',
+        tenant: 'Không đóng vai người thuê. Hãy chuyển thành vai người bán/chủ phòng đang tư vấn, phản hồi tự nhiên và có thông tin liên hệ.',
+        ask_more: 'Tập trung hỏi thêm thông tin còn thiếu như khu vực, ngân sách, số người ở, thời gian vào ở, yêu cầu nội thất, chỗ để xe hoặc giấy tờ mua bán. Nếu có căn/phòng đang có thì chỉ gợi ý để khách tham khảo.'
+      }[commentMode] || 'Tự nhận diện nhu cầu khách, so khớp với phòng/nhà đang có và viết như người bán/chủ phòng đang tư vấn.';
+
+      return `Bạn là nhân viên tư vấn bất động sản/phòng trọ chuyên nghiệp, nói chuyện tự nhiên như người thật trong nhóm Facebook.
+
+Nhiệm vụ: Dựa sát vào nội dung bài viết gốc của khách đang cần thuê hoặc mua phòng trọ, nhà trọ, căn hộ, nhà ở, hãy viết duy nhất 1 bình luận trả lời phù hợp, lịch sự, tự nhiên và có khả năng khiến khách muốn nhắn tin lại.
+
+Thông tin đầu vào:
+- Bài viết gốc của khách: "${article}"
+- Thông tin phòng/nhà đang có: "${extraInfo}"
+${contactInstruction}
+- Phong cách bình luận: ${selectedTone}
+- Logic trả lời: ${modeInstruction}
+
+Cách phân tích bắt buộc trước khi viết:
+1. Trích nhu cầu chính từ bài gốc: khách cần thuê hay mua, khu vực/địa chỉ mong muốn, ngân sách, loại phòng/nhà, số người ở, thời gian vào ở, yêu cầu nội thất/tiện ích/giấy tờ nếu có.
+2. Trích thông tin phòng/nhà đang có: khu vực/địa chỉ, giá, loại phòng/nhà, diện tích, tiện ích, tình trạng, điều kiện thuê/mua, liên hệ.
+3. So khớp hai phần trên theo 3 mức:
+   - KHỚP RÕ: cùng hoặc rất gần khu vực, đúng loại phòng/nhà, ngân sách không lệch nhiều. Khi đó có thể nói "mình có phòng/căn phù hợp".
+   - KHỚP MỘT PHẦN: gần tiêu chí nhưng thiếu dữ liệu hoặc hơi lệch khu vực/giá/loại nhà. Khi đó nói mềm như "mình có phòng/căn gần tiêu chí bạn tìm" hoặc "bạn có thể tham khảo thêm".
+   - KHÔNG KHỚP ĐỊA CHỈ/KHU VỰC: không được nói là phù hợp. Chỉ được tư vấn kiểu "nếu bạn mở rộng khu vực qua bên mình thì có phòng/căn để tham khảo" hoặc "mình có căn/phòng khác, bạn tham khảo thêm nếu tiện".
+4. Nếu bài gốc ghi rõ địa chỉ/khu vực khác với địa chỉ phòng/nhà đang có, bắt buộc phải nói theo hướng tham khảo, không nhận là đúng vị trí khách tìm.
+5. Nếu ngân sách của khách thấp hơn giá phòng/nhà đang có, không nói phù hợp hoàn toàn; hãy nói rõ là "bên mình có mức giá khoảng... nếu bạn cân nhắc thêm" nếu giá đã có trong dữ liệu.
+
+Quy tắc viết bình luận:
+1. Bám sát bài gốc, nhắc lại nhẹ 1 chi tiết thật của khách như khu vực, ngân sách, loại phòng/nhà hoặc số người ở nếu có.
+2. Bắt buộc dùng thông tin phòng/nhà đang có, nhưng chỉ dùng đúng thông tin đã nhập, không tự bịa thêm.
+3. Bắt buộc có thông tin liên hệ từ phần đã nhập; có thể dùng SĐT/Zalo, inbox Facebook hoặc rep comment theo đúng dữ liệu.
+4. Nếu thông tin phòng/nhà trùng nhu cầu: tư vấn trực tiếp và mời khách nhắn để gửi ảnh, vị trí, giá chi tiết.
+5. Nếu thông tin phòng/nhà không trùng địa chỉ/khu vực: tư vấn mềm theo hướng tham khảo, không ép khách, không nói "đúng khu bạn tìm".
+6. Nếu bài viết thiếu thông tin: hỏi thêm 1 câu ngắn, đồng thời gợi ý phòng/nhà đang có nếu liên quan.
+7. Không dùng link nếu người dùng không nhập link.
+8. Không viết kiểu quảng cáo lộ liễu, không spam, không hashtag, không markdown.
+9. Không dùng từ quá đà như "siêu phẩm", "rẻ nhất thị trường", "cam kết 100%", "hot nhất".
+10. Độ dài 2-4 câu ngắn, tự nhiên, chuyên nghiệp, giống người bán/chủ phòng/môi giới thật.
+11. Thông tin liên hệ chỉ chèn 1 lần, tự nhiên, không nhồi nhét.
+12. Không dùng quá 1 emoji. Câu cuối không có dấu chấm.
+
+Ví dụ cách nói khi không trùng địa chỉ:
+- "Mình thấy bạn đang tìm khu [khu vực trong bài]. Bên mình hiện có phòng/căn ở [khu vực đang có], nếu bạn có thể mở rộng khu vực thì mình gửi thông tin tham khảo thêm nhé"
+- "Nhu cầu của bạn đang ưu tiên [chi tiết trong bài]. Bên mình có căn/phòng khác ở [thông tin đang có], giá và tiện ích như trên, bạn tham khảo thêm thì ib/Zalo mình gửi ảnh cụ thể"
+
+Chỉ trả về nội dung bình luận cuối cùng, không thêm tiêu đề, không giải thích.`;
+    }
+
+    async function generateComment() {
+      const apiKey = cleanApiKey(els.apiKeyInput.value);
+      const apiUrl = APP.defaultApiUrl;
+      const model = els.modelInput.value.trim() || APP.defaultModel;
+      const article = els.articleInput.value.trim();
+      const extraInfo = els.productNameInput.value.trim();
+      const selectedTone = els.toneSelect.value;
+      const commentMode = els.commentModeSelect.value;
+      const contactInfo = normalizeContactInfo(els.productLinkInput.value);
+
+      if (!apiKey) {
+        toast('Vui lòng nhập API key.', 'warning');
+        els.apiKeyInput.focus();
+        return;
+      }
+
+      if (!article) {
+        toast('Vui lòng dán nội dung bài viết khách cần thuê/mua.', 'warning');
+        els.articleInput.focus();
+        return;
+      }
+
+      els.generateBtn.disabled = true;
+      els.generateBtn.textContent = '⏳ Đang lọc bài...';
+      setOutput('Đang gửi nội dung bài viết cho AI phân tích trước...', 'loading');
+
+      try {
+        saveApiConfig({ silent: true });
+        saveDraft();
+
+        const classificationPrompt = buildClassificationPrompt({ article });
+        const classificationRaw = stripAiWrapper(await callChatCompletions({ apiUrl, apiKey, model, prompt: classificationPrompt }));
+        const classification = parseArticleClassification(classificationRaw);
+
+        if (classification === 'next') {
+          setOutput('next', '');
+          const copied = await copyText('next', { silent: true });
+          if (copied) {
+            const oldCopyText = els.copyBtn.textContent;
+            els.copyBtn.textContent = '✔️ Đã tự copy next';
+            setTimeout(() => { els.copyBtn.textContent = oldCopyText; }, 2500);
+          }
+          toast('Bài này là người cho thuê/bán hoặc không phải khách đang tìm. Đã trả về next.', 'warning');
+          return;
+        }
+
+        if (!extraInfo) {
+          toast('Vui lòng nhập thông tin phòng/nhà trước khi tạo comment.', 'warning');
+          els.productNameInput.focus();
+          setOutput('⚠️ Bài này là khách đang tìm thuê/mua, nhưng đang thiếu thông tin phòng/nhà. Hãy nhập giá, khu vực, tiện ích hoặc điều kiện thuê/mua rồi tạo lại.', 'error');
+          return;
+        }
+
+        if (!contactInfo) {
+          toast('Vui lòng nhập thông tin liên hệ trước khi tạo comment.', 'warning');
+          els.productLinkInput.focus();
+          setOutput('⚠️ Bài này là khách đang tìm thuê/mua, nhưng đang thiếu thông tin liên hệ. Hãy nhập SĐT/Zalo, ib Facebook hoặc rep comment này rồi tạo lại.', 'error');
+          return;
+        }
+
+        els.generateBtn.textContent = '⏳ Đang tạo comment...';
+        setOutput('Bài viết là khách đang cần thuê/mua. Đang tạo bình luận tư vấn...', 'loading');
+
+        const prompt = buildPrompt({ article, extraInfo, contactInfo, selectedTone, commentMode });
+        const result = stripAiWrapper(await callChatCompletions({ apiUrl, apiKey, model, prompt }));
+
+        setOutput(result || 'Không có phản hồi từ API.', result ? '' : 'error');
+
+        if (result) {
+          const copied = await copyText(els.output.textContent, { silent: true });
+          const oldCopyText = els.copyBtn.textContent;
+          if (copied) {
+            els.copyBtn.textContent = '✔️ Đã tự copy';
+            toast('Đã tạo xong và tự động copy kết quả');
+            setTimeout(() => { els.copyBtn.textContent = oldCopyText; }, 2500);
+          } else {
+            els.copyBtn.textContent = 'Copy thủ công';
+            toast('Trình duyệt chặn tự động copy. Bấm nút Sao chép để copy thủ công.', 'warning');
+            setTimeout(() => { els.copyBtn.textContent = oldCopyText; }, 3000);
+          }
+        }
+      } catch (error) {
+        setOutput('❌ Lỗi API: ' + getErrorText(error), 'error');
+      } finally {
+        els.generateBtn.disabled = false;
+        els.generateBtn.textContent = '✨ Tạo bình luận';
+      }
+    }
+
+    async function copyText(text, options = {}) {
+      const value = String(text || '').trim();
+      if (!value) return false;
+
+      try {
+        await navigator.clipboard.writeText(value);
+        if (!options.silent) toast('Đã sao chép vào clipboard');
+        return true;
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = value;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+
+        let ok = false;
+        try { ok = document.execCommand('copy'); } catch { ok = false; }
+        ta.remove();
+
+        if (!options.silent) {
+          toast(ok ? 'Đã sao chép vào clipboard' : 'Trình duyệt chặn sao chép tự động.', ok ? 'success' : 'warning');
+        }
+
+        return ok;
+      }
+    }
+
+    function clearForm() {
+      els.articleInput.value = '';
+      els.productNameInput.value = '';
+      els.productLinkInput.value = '';
+      els.toneSelect.selectedIndex = 0;
+      els.commentModeSelect.selectedIndex = 0;
+      setOutput('Bình luận tư vấn sẽ xuất hiện tại đây...', 'placeholder');
+      saveDraft();
+      updateCounters();
+      toast('Đã làm mới form');
+    }
+
+    async function pasteArticle() {
+      try {
+        const text = await navigator.clipboard.readText();
+        els.articleInput.value = text;
+        saveDraft();
+        updateCounters();
+        toast('Đã dán nội dung');
+      } catch {
+        toast('Trình duyệt chặn clipboard. Hãy dán thủ công bằng Ctrl+V.', 'warning');
+      }
+    }
+
+    function saveHistory() {
+      const comment = els.output.textContent.trim();
+      if (!comment || els.output.classList.contains('placeholder') || els.output.classList.contains('loading')) {
+        toast('Chưa có bình luận hợp lệ để lưu.', 'warning');
+        return;
+      }
+
+      const history = loadStorage(APP.storage.history, []);
+      history.unshift({
+        comment,
+        extraInfo: els.productNameInput.value.trim(),
+        contactInfo: normalizeContactInfo(els.productLinkInput.value),
+        createdAt: new Date().toISOString()
+      });
+      saveStorage(APP.storage.history, history.slice(0, 50));
+      toast('Đã lưu bình luận vào lịch sử');
+    }
+
+    function saveDraft() {
+      saveStorage(APP.storage.draft, {
+        article: els.articleInput.value,
+        productName: els.productNameInput.value,
+        contactInfo: els.productLinkInput.value,
+        tone: els.toneSelect.value,
+        commentMode: els.commentModeSelect.value
+      });
+    }
+
+    function restoreDraft() {
+      const draft = loadStorage(APP.storage.draft, null);
+      if (!draft) return;
+
+      els.articleInput.value = draft.article || '';
+      els.productNameInput.value = draft.productName || '';
+      els.productLinkInput.value = draft.contactInfo || draft.productLinks || '';
+      if (draft.tone) els.toneSelect.value = draft.tone;
+      if (draft.commentMode) els.commentModeSelect.value = draft.commentMode;
+    }
+
+    function saveApiConfig(options = {}) {
+      const apiKey = cleanApiKey(els.apiKeyInput.value);
+      const model = els.modelInput.value.trim() || APP.defaultModel;
+
+      if (apiKey) saveStorage(APP.storage.apiKey, apiKey);
+      saveStorage(APP.storage.model, model);
+
+      els.apiKeyInput.value = apiKey;
+      els.modelInput.value = model;
+      updateApiStatus();
+
+      if (!options.silent) toast('Đã lưu cấu hình API');
+    }
+
+    function restoreApiConfig() {
+      els.apiKeyInput.value = loadStorage(APP.storage.apiKey, '');
+      els.modelInput.value = loadStorage(APP.storage.model, APP.defaultModel);
+      updateApiStatus();
+    }
+
+    function clearApiConfig() {
+      removeStorage(APP.storage.apiKey);
+      els.apiKeyInput.value = '';
+      updateApiStatus();
+      toast('Đã xoá API key');
+    }
+
+    function toggleApiKeyVisible() {
+      const isPassword = els.apiKeyInput.type === 'password';
+      els.apiKeyInput.type = isPassword ? 'text' : 'password';
+      els.toggleKeyBtn.textContent = isPassword ? '🙈 Ẩn key' : '👁️ Hiện key';
+    }
+
+    function wireEvents() {
+      els.generateBtn.addEventListener('click', generateComment);
+      els.clearBtn.addEventListener('click', clearForm);
+      els.pasteBtn.addEventListener('click', pasteArticle);
+      els.copyBtn.addEventListener('click', () => copyText(els.output.textContent));
+      els.saveHistoryBtn.addEventListener('click', saveHistory);
+      els.saveApiBtn.addEventListener('click', () => saveApiConfig());
+      els.clearApiBtn.addEventListener('click', clearApiConfig);
+      els.toggleKeyBtn.addEventListener('click', toggleApiKeyVisible);
+
+      [els.articleInput, els.productNameInput, els.productLinkInput, els.toneSelect, els.commentModeSelect].forEach(input => {
+        input.addEventListener('input', () => {
+          updateCounters();
+          saveDraft();
+        });
+        input.addEventListener('change', saveDraft);
+      });
+
+      [els.apiKeyInput, els.modelInput].forEach(input => {
+        input.addEventListener('input', updateApiStatus);
+        input.addEventListener('change', () => saveApiConfig({ silent: true }));
+      });
+
+      document.addEventListener('keydown', event => {
+        if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+          event.preventDefault();
+          generateComment();
+        }
+      });
+    }
+
+    function init() {
+      restoreApiConfig();
+      restoreDraft();
+      wireEvents();
+      updateCounters();
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
