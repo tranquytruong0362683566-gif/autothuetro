@@ -382,9 +382,16 @@
                     <input type="number" id="linkPauseSecondsInput" min="0" max="86400" step="1" value="60">
                   </div>
                 </div>
-                <div class="group">
-                  <label for="loopPauseSecondsInput">Nghỉ sau mỗi vòng quét</label>
-                  <input type="number" id="loopPauseSecondsInput" min="0" max="86400" step="1" value="240">
+                <div class="grid2">
+                  <div class="group">
+                    <label for="loopPauseSecondsInput">Nghỉ sau mỗi vòng quét</label>
+                    <input type="number" id="loopPauseSecondsInput" min="0" max="86400" step="1" value="240">
+                  </div>
+                  <div class="group">
+                    <label for="duplicatePauseSecondsInput">Nghỉ khi link quét trùng hết</label>
+                    <input type="number" id="duplicatePauseSecondsInput" min="0" max="86400" step="1" value="300">
+                    <span class="hint">Tạm nghỉ rồi tự quét lại, không dừng quy trình.</span>
+                  </div>
                 </div>
               </div>
 
@@ -415,6 +422,27 @@
                   <label class="checkline"><input type="checkbox" id="attachImageCheckbox" checked> Comment kèm ảnh mẫu AI chọn</label>
                   <label class="checkline"><input type="checkbox" id="fallbackTextCheckbox" checked> Nếu ảnh lỗi vẫn gửi chữ</label>
                   <label class="checkline"><input type="checkbox" id="closeTabCheckbox" checked> Đóng tab sau khi xong</label>
+                </div>
+                <div class="group">
+                  <label>Thời gian chờ khi đăng bình luận</label>
+                  <div class="grid3">
+                    <div class="group">
+                      <label for="pageLoadWaitSecondsInput">Chờ tải trang trước khi dán</label>
+                      <input type="number" id="pageLoadWaitSecondsInput" min="0" max="300" step="1" value="10">
+                      <span class="hint">Giây</span>
+                    </div>
+                    <div class="group">
+                      <label for="imageLoadWaitSecondsInput">Chờ ảnh tải trước khi gửi</label>
+                      <input type="number" id="imageLoadWaitSecondsInput" min="0" max="300" step="1" value="5">
+                      <span class="hint">Giây</span>
+                    </div>
+                    <div class="group">
+                      <label for="afterSendWaitSecondsInput">Chờ sau khi gửi trước khi đóng</label>
+                      <input type="number" id="afterSendWaitSecondsInput" min="0" max="300" step="1" value="7">
+                      <span class="hint">Giây</span>
+                    </div>
+                  </div>
+                  <p class="hint">Quy trình mặc định: mở bài → chờ 10 giây → dán chữ và gắn ảnh → chờ 5 giây → gửi → chờ 7 giây → đóng tab.</p>
                 </div>
               </div>
             </div>
@@ -450,7 +478,7 @@
                 </div>
                 <div class="group">
                   <label>Đang dùng</label>
-                  <div class="hint" id="scanConfigSummary">Nguồn quét: Bài viết mới trong nhóm · 5 link/nhóm · nghỉ 60s/link · 240s/vòng</div>
+                  <div class="hint" id="scanConfigSummary">Nguồn quét: Bài viết mới trong nhóm · 5 link/nhóm · nghỉ 60s/link · 240s/vòng · trùng hết nghỉ 300s</div>
                 </div>
               </div>
               <div class="primary-row">

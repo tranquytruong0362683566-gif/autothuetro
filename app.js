@@ -1,7 +1,7 @@
 'use strict';
 
 const APP = {
-  version: '10.1.24',
+  version: '10.1.26',
   defaultApiUrl: 'https://console.flatkey.ai/v1/chat/completions',
   metaApiUrl: 'https://rakko.tools/api/tools/meta-extractor/extractMeta',
   defaultModel: 'gpt-4o-mini',
@@ -17,7 +17,11 @@ const APP = {
     scanMode: 'truong_ai_commenter_scan_mode_v1',
     groupLimit: 'truong_ai_commenter_group_limit_v1',
     loopPauseSeconds: 'truong_ai_commenter_loop_pause_seconds_v1',
+    duplicatePauseSeconds: 'truong_ai_commenter_duplicate_pause_seconds_v1',
     linkPauseSeconds: 'truong_ai_commenter_link_pause_seconds_v1',
+    pageLoadWaitSeconds: 'truong_ai_commenter_page_load_wait_seconds_v1',
+    imageLoadWaitSeconds: 'truong_ai_commenter_image_load_wait_seconds_v1',
+    afterSendWaitSeconds: 'truong_ai_commenter_after_send_wait_seconds_v1',
     scannedLinks: 'truong_ai_commenter_scanned_group_links_v2',
     extensionId: 'truong_ai_commenter_extension_id_v1'
   }
@@ -37,7 +41,11 @@ const els = {
   scanSourceModeSelect: $('#scanSourceModeSelect'),
   groupLimitInput: $('#groupLimitInput'),
   loopPauseSecondsInput: $('#loopPauseSecondsInput'),
+  duplicatePauseSecondsInput: $('#duplicatePauseSecondsInput'),
   linkPauseSecondsInput: $('#linkPauseSecondsInput'),
+  pageLoadWaitSecondsInput: $('#pageLoadWaitSecondsInput'),
+  imageLoadWaitSecondsInput: $('#imageLoadWaitSecondsInput'),
+  afterSendWaitSecondsInput: $('#afterSendWaitSecondsInput'),
   scanGroupLinksBtn: $('#scanGroupLinksBtn'),
   autoGroupLoopBtn: $('#autoGroupLoopBtn'),
   runExistingLinksBtn: $('#runExistingLinksBtn'),
@@ -530,7 +538,8 @@ function updateScanConfigSummary() {
   const limit = numberInputValue(els.groupLimitInput, 5, 1, 50);
   const linkPause = numberInputValue(els.linkPauseSecondsInput, 60, 0, 86400);
   const loopPause = numberInputValue(els.loopPauseSecondsInput, 240, 0, 86400);
-  els.scanConfigSummary.textContent = `Nguồn quét: ${scanModeLabel(mode)} · ${limit} link/nhóm · nghỉ ${linkPause}s/link · ${loopPause}s/vòng`;
+  const duplicatePause = numberInputValue(els.duplicatePauseSecondsInput, 300, 0, 86400);
+  els.scanConfigSummary.textContent = `Nguồn quét: ${scanModeLabel(mode)} · ${limit} link/nhóm · nghỉ ${linkPause}s/link · ${loopPause}s/vòng · trùng hết nghỉ ${duplicatePause}s`;
 }
 function updateCounters() {
   els.articleCounter.textContent = `${els.articleInput.value.length}/8000`;
@@ -791,7 +800,11 @@ function saveDraft() {
     scanMode: els.scanSourceModeSelect?.value || 'group_latest',
     groupLimit: els.groupLimitInput?.value || '5',
     loopPauseSeconds: els.loopPauseSecondsInput?.value || '240',
-    linkPauseSeconds: els.linkPauseSecondsInput?.value || '60'
+    duplicatePauseSeconds: els.duplicatePauseSecondsInput?.value || '300',
+    linkPauseSeconds: els.linkPauseSecondsInput?.value || '60',
+    pageLoadWaitSeconds: els.pageLoadWaitSecondsInput?.value || '10',
+    imageLoadWaitSeconds: els.imageLoadWaitSecondsInput?.value || '5',
+    afterSendWaitSeconds: els.afterSendWaitSecondsInput?.value || '7'
   });
 }
 function restoreDraft() {
@@ -809,7 +822,11 @@ function restoreDraft() {
   if (els.scanSourceModeSelect) els.scanSourceModeSelect.value = draft.scanMode || loadStorage(APP.storage.scanMode, 'group_latest');
   if (els.groupLimitInput) els.groupLimitInput.value = draft.groupLimit || loadStorage(APP.storage.groupLimit, '5');
   if (els.loopPauseSecondsInput) els.loopPauseSecondsInput.value = draft.loopPauseSeconds || loadStorage(APP.storage.loopPauseSeconds, '240');
+  if (els.duplicatePauseSecondsInput) els.duplicatePauseSecondsInput.value = draft.duplicatePauseSeconds || loadStorage(APP.storage.duplicatePauseSeconds, '300');
   if (els.linkPauseSecondsInput) els.linkPauseSecondsInput.value = draft.linkPauseSeconds || loadStorage(APP.storage.linkPauseSeconds, '60');
+  if (els.pageLoadWaitSecondsInput) els.pageLoadWaitSecondsInput.value = draft.pageLoadWaitSeconds || loadStorage(APP.storage.pageLoadWaitSeconds, '10');
+  if (els.imageLoadWaitSecondsInput) els.imageLoadWaitSecondsInput.value = draft.imageLoadWaitSeconds || loadStorage(APP.storage.imageLoadWaitSeconds, '5');
+  if (els.afterSendWaitSecondsInput) els.afterSendWaitSecondsInput.value = draft.afterSendWaitSeconds || loadStorage(APP.storage.afterSendWaitSeconds, '7');
 }
 
 
@@ -1247,7 +1264,7 @@ async function scanGroupLinksToInput({ silent = false } = {}) {
   if (scanModeNeedsGroup(scanMode) && !groups.length) {
     setGroupStatus('Hãy nhập UID hoặc link nhóm Facebook trước.', 'warn');
     els.groupIdsInput?.focus();
-    return [];
+    return { links: [], rawCount: 0, duplicateCount: 0, allDuplicated: false, noCandidates: true };
   }
 
   setGroupStatus(`Đang quét ${scanModeLabel(scanMode)}...`, 'warn');
@@ -1270,7 +1287,10 @@ async function scanGroupLinksToInput({ silent = false } = {}) {
   }, 15 * 60 * 1000);
 
   const responseData = bridgeResponseData(response);
-  const found = filterUnscannedLinks(extractLinksFromExtensionResponse(response));
+  const candidates = uniqueUrls(extractLinksFromExtensionResponse(response));
+  const found = filterUnscannedLinks(candidates);
+  const duplicateCount = Math.max(0, candidates.length - found.length);
+  const allDuplicated = candidates.length > 0 && found.length === 0 && duplicateCount === candidates.length;
   const merged = uniqueUrls([...urls(), ...found]);
   els.facebookUrlsInput.value = merged.join('\n');
   updateCounters();
@@ -1279,13 +1299,24 @@ async function scanGroupLinksToInput({ silent = false } = {}) {
   const reports = Array.isArray(responseData.reports) ? responseData.reports : [];
   const reportText = reports.map(r => `${r.source || r.groupId || scanModeLabel(scanMode)}: ${r.count || 0} link`).join(' | ');
   if (found.length) {
-    setGroupStatus(`Đã lấy ${found.length} link mới${reportText ? ' — ' + reportText : ''}.`, 'ok');
-    if (!silent) toast(`Đã quét được ${found.length} link mới`);
+    const duplicateText = duplicateCount ? `, bỏ qua ${duplicateCount} link trùng` : '';
+    setGroupStatus(`Đã lấy ${found.length} link mới${duplicateText}${reportText ? ' — ' + reportText : ''}.`, 'ok');
+    if (!silent) toast(`Đã quét được ${found.length} link mới${duplicateText}`);
+  } else if (allDuplicated) {
+    setGroupStatus(`Đã quét ${candidates.length} link nhưng tất cả đều đã xử lý${reportText ? ' — ' + reportText : ''}.`, 'warn');
+    if (!silent) toast(`Tất cả ${candidates.length} link quét được đều bị trùng.`, 'warning');
   } else {
-    setGroupStatus(responseData.error || response.error || `Không có link mới sau khi lọc trùng${reportText ? ' — ' + reportText : ''}.`, 'warn');
-    if (!silent) toast('Không có link mới sau khi lọc trùng.', 'warning');
+    setGroupStatus(responseData.error || response.error || `Không tìm thấy link hợp lệ${reportText ? ' — ' + reportText : ''}.`, 'warn');
+    if (!silent) toast('Không tìm thấy link hợp lệ trong lần quét này.', 'warning');
   }
-  return found;
+  return {
+    links: found,
+    rawCount: candidates.length,
+    duplicateCount,
+    allDuplicated,
+    noCandidates: candidates.length === 0,
+    reportText
+  };
 }
 async function scanGroupLinksManual() {
   if (isRunning) return;
@@ -1358,6 +1389,11 @@ async function processOneFacebookUrl(url, index = 0, total = 1) {
 
   try {
     const allowTextFallback = !!els.fallbackTextCheckbox.checked;
+    const pageLoadWaitMs = numberInputValue(els.pageLoadWaitSecondsInput, 10, 0, 300) * 1000;
+    const imageLoadWaitMs = numberInputValue(els.imageLoadWaitSecondsInput, 5, 0, 300) * 1000;
+    const afterSendWaitMs = numberInputValue(els.afterSendWaitSecondsInput, 7, 0, 300) * 1000;
+    const extensionTimeoutMs = Math.max(150000, pageLoadWaitMs + imageLoadWaitMs + afterSendWaitMs + 60000);
+    logLine(`⏱️ Thời gian chờ: tải trang ${pageLoadWaitMs / 1000}s · tải ảnh ${imageLoadWaitMs / 1000}s · sau gửi ${afterSendWaitMs / 1000}s.`);
     const sentResponse = await sendExt({
       type: 'FB_COMMENT_WITH_IMAGE',
       action: 'FB_COMMENT_WITH_IMAGE',
@@ -1367,8 +1403,11 @@ async function processOneFacebookUrl(url, index = 0, total = 1) {
       imageName: image?.name || 'anh_mau.jpg',
       requireImage,
       fallbackText: allowTextFallback,
-      closeAfter: els.closeTabCheckbox.checked
-    }, 150000);
+      closeAfter: els.closeTabCheckbox.checked,
+      pageLoadWaitMs,
+      imageLoadWaitMs,
+      afterSendWaitMs
+    }, extensionTimeoutMs);
     const sent = bridgeResponseData(sentResponse);
     const textVerified = sent.textVerified === true || sent.textPasted === true || sent.commentSent === true || sent.submitted === true || sent.sent === true;
     const imageAttached = sent.imageAttached === true || sent.imagePasted === true || sent.hasImage === true;
@@ -1472,21 +1511,28 @@ async function runClosedGroupLoop() {
   try {
     while (groupLoopRunning) {
       setGroupStatus(`Đang chạy vòng ${cycle}: quét nhóm...`, 'warn');
-      let links = [];
+      let scanResult = { links: [], rawCount: 0, duplicateCount: 0, allDuplicated: false, noCandidates: true };
       try {
-        links = await scanGroupLinksToInput({ silent: true });
+        scanResult = await scanGroupLinksToInput({ silent: true });
       } catch (error) {
         setGroupStatus(`Lỗi quét nhóm: ${getErrorText(error)}`, 'error');
       }
 
       if (!groupLoopRunning) break;
+      const links = Array.isArray(scanResult.links) ? scanResult.links : [];
       if (links.length) {
         setGroupStatus(`Vòng ${cycle}: có ${links.length} link mới, bắt đầu xử lý...`, 'ok');
         await runFacebookLinksQueue(urls(), { clearLog: false, manageRunning: false });
-      } else {
-        els.facebookUrlsInput.value = '';
-        updateCounters();
-        saveDraft();
+      } else if (scanResult.allDuplicated) {
+        const duplicatePause = numberInputValue(els.duplicatePauseSecondsInput, 300, 0, 86400);
+        await waitCountdown(
+          duplicatePause,
+          remain => `Vòng ${cycle}: ${scanResult.rawCount} link đều đã xử lý. Tạm nghỉ ${remain} giây rồi tự quét lại...`,
+          () => groupLoopRunning
+        );
+        if (!groupLoopRunning) break;
+        cycle += 1;
+        continue;
       }
 
       if (!groupLoopRunning) break;
@@ -1627,7 +1673,7 @@ function wire() {
     if (edit) await editListing(edit);
     if (del) await deleteListing(del);
   });
-  [els.articleInput, els.facebookUrlsInput, els.groupIdsInput, els.scanSourceModeSelect, els.groupLimitInput, els.loopPauseSecondsInput, els.linkPauseSecondsInput, els.productLinkInput, els.toneSelect, els.commentModeSelect, els.attachImageCheckbox, els.fallbackTextCheckbox, els.closeTabCheckbox].filter(Boolean).forEach(el => {
+  [els.articleInput, els.facebookUrlsInput, els.groupIdsInput, els.scanSourceModeSelect, els.groupLimitInput, els.loopPauseSecondsInput, els.duplicatePauseSecondsInput, els.linkPauseSecondsInput, els.pageLoadWaitSecondsInput, els.imageLoadWaitSecondsInput, els.afterSendWaitSecondsInput, els.productLinkInput, els.toneSelect, els.commentModeSelect, els.attachImageCheckbox, els.fallbackTextCheckbox, els.closeTabCheckbox].filter(Boolean).forEach(el => {
     el.addEventListener('input', () => { updateCounters(); saveDraft(); });
     el.addEventListener('change', () => { updateCounters(); saveDraft(); });
   });
