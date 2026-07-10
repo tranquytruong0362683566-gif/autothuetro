@@ -1,6 +1,7 @@
 'use strict';
 
 const APP = {
+  version: '10.1.20',
   defaultApiUrl: 'https://console.flatkey.ai/v1/chat/completions',
   metaApiUrl: 'https://rakko.tools/api/tools/meta-extractor/extractMeta',
   defaultModel: 'gpt-4o-mini',
@@ -101,6 +102,7 @@ let editingId = null;
 let dbPromise = null;
 let isRunning = false;
 let groupLoopRunning = false;
+let extensionInfo = { ready: false, version: '' };
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>'"]/g, char => ({
@@ -415,12 +417,13 @@ function normalizeFacebookUrl(raw) {
   if (!value) return '';
   try {
     const url = new URL(value);
-    if (!/(^|\.)facebook\.com$/i.test(url.hostname)) return value;
+    if (!/(^|\.)facebook\.com$/i.test(url.hostname)) return '';
+    if (!/^https?:$/i.test(url.protocol)) return '';
     url.hostname = 'www.facebook.com';
     url.hash = '';
     return url.toString();
   } catch {
-    return value;
+    return '';
   }
 }
 function normalizedUrlKey(url) {
@@ -464,7 +467,8 @@ function filterUnscannedLinks(list) {
   return uniqueUrls(list).filter(link => !scanned.has(normalizedUrlKey(link)));
 }
 function syncUrlInputFiltered() {
-  const next = uniqueUrls(String(els.facebookUrlsInput.value || '').split(/[\n\t ]+/)).join('\n');
+  const raw = uniqueUrls(String(els.facebookUrlsInput.value || '').split(/[\n\t ]+/));
+  const next = filterUnscannedLinks(raw).join('\n');
   if (els.facebookUrlsInput.value !== next) els.facebookUrlsInput.value = next;
   updateCounters();
   saveDraft();
@@ -505,11 +509,11 @@ function setGroupStatus(message, type = 'warn') {
 async function sleepMs(ms) {
   return new Promise(resolve => setTimeout(resolve, Math.max(0, ms)));
 }
-async function waitCountdown(seconds, makeMessage) {
+async function waitCountdown(seconds, makeMessage, shouldContinue = () => true) {
   const total = Math.max(0, Number(seconds) || 0);
   if (!total) return;
   const endAt = Date.now() + total * 1000;
-  while (groupLoopRunning && Date.now() < endAt) {
+  while (shouldContinue() && Date.now() < endAt) {
     const remain = Math.ceil((endAt - Date.now()) / 1000);
     setGroupStatus(makeMessage(remain), 'warn');
     await sleepMs(Math.min(1000, Math.max(150, endAt - Date.now())));
@@ -596,17 +600,81 @@ async function portableHttpRequest(url, options = {}) {
         headers: options.headers || {},
         body: options.body || ''
       }, 120000);
-      return { ...proxyResult, ok: proxyResult.httpOk !== false };
+      const bodyText = typeof proxyResult.bodyText === 'string'
+        ? proxyResult.bodyText
+        : typeof proxyResult.body === 'string'
+          ? proxyResult.body
+          : proxyResult.data !== undefined
+            ? JSON.stringify(proxyResult.data)
+            : proxyResult.json !== undefined
+              ? JSON.stringify(proxyResult.json)
+              : '';
+      return {
+        ...proxyResult,
+        bodyText,
+        contentType: proxyResult.contentType || proxyResult.headers?.['content-type'] || proxyResult.headers?.['Content-Type'] || (bodyText.trim().startsWith('{') || bodyText.trim().startsWith('[') ? 'application/json' : ''),
+        status: Number(proxyResult.status || proxyResult.statusCode || 200),
+        statusText: proxyResult.statusText || '',
+        ok: proxyResult.ok !== false && proxyResult.httpOk !== false
+      };
     } catch (extensionError) {
       throw new Error(`Không gọi được API từ GitHub Pages: ${getErrorText(extensionError) || getErrorText(directError)}`);
     }
   }
 }
 function parsePortableBody(result) {
+  if (result?.data !== undefined && typeof result.data !== 'string') return result.data;
+  if (result?.json !== undefined && typeof result.json !== 'string') return result.json;
   if (String(result.contentType || '').includes('application/json')) {
     try { return JSON.parse(result.bodyText || 'null'); } catch {}
   }
+  const raw = String(result.bodyText || '').trim();
+  if (raw.startsWith('{') || raw.startsWith('[')) {
+    try { return JSON.parse(raw); } catch {}
+  }
   return result.bodyText || '';
+}
+function bridgeResponseData(response) {
+  return response?.payload || response?.data || response?.result || response || {};
+}
+function extractLinksFromExtensionResponse(response) {
+  const data = bridgeResponseData(response);
+  const raw = data.links || data.urls || data.postLinks || data.items || [];
+  if (Array.isArray(raw)) {
+    return raw.map(item => typeof item === 'string' ? item : (item?.url || item?.link || item?.href || '')).filter(Boolean);
+  }
+  if (typeof raw === 'string') return raw.split(/[\n\s]+/).filter(Boolean);
+  return [];
+}
+function extractArticleFromExtensionResponse(response) {
+  const data = bridgeResponseData(response);
+  const candidates = [
+    data.article,
+    data.content,
+    data.text,
+    data.title,
+    data.postText,
+    data.message,
+    response?.article,
+    response?.content,
+    response?.title
+  ];
+  return candidates.map(value => field(value)).find(isUsableArticleText) || '';
+}
+function isUsableArticleText(text) {
+  const value = field(String(text || '').replace(/\s+/g, ' '));
+  if (value.length < 8) return false;
+  const normalized = value.toLowerCase();
+  const generic = [
+    'log into facebook',
+    'đăng nhập facebook',
+    'facebook – log in or sign up',
+    'facebook - log in or sign up',
+    'facebook helps you connect and share',
+    'see posts, photos and more on facebook',
+    'hãy đăng nhập để tiếp tục'
+  ];
+  return !generic.some(item => normalized.includes(item));
 }
 async function fetchArticleByMetaApi(url) {
   const result = await portableHttpRequest(APP.metaApiUrl, {
@@ -619,8 +687,31 @@ async function fetchArticleByMetaApi(url) {
   });
   if (!result.ok) throw new Error(`${result.status} ${result.statusText}: ${String(result.bodyText || '').slice(0, 1200)}`);
   const article = extractMetaArticle(parsePortableBody(result));
-  if (!article) throw new Error('API không trả về title/description hợp lệ cho link này.');
+  if (!isUsableArticleText(article)) throw new Error('API chỉ trả về trang Facebook chung hoặc nội dung quá ngắn, chưa đọc được bài viết thật.');
   return article;
+}
+async function fetchArticleSmart(url) {
+  try {
+    const response = await sendExt({
+      type: 'READ_FB_POST_TITLE',
+      action: 'READ_FB_POST_TITLE',
+      url,
+      link: url,
+      delayMs: 5000,
+      maxChars: 8000,
+      openInBackground: true,
+      active: false,
+      closeAfter: true,
+      closeAfterRead: true,
+      keepOpen: false,
+      useFbPostLogic: true
+    }, 45000);
+    const article = extractArticleFromExtensionResponse(response);
+    if (article) return article;
+  } catch (error) {
+    logLine(`Extension chưa đọc trực tiếp được bài, chuyển sang API dự phòng: ${getErrorText(error)}`);
+  }
+  return fetchArticleByMetaApi(url);
 }
 async function fetchArticleApiToInput() {
   const list = urls();
@@ -635,7 +726,7 @@ async function fetchArticleApiToInput() {
   const oldText = els.fetchArticleApiBtn.textContent;
   els.fetchArticleApiBtn.textContent = '⏳ Đang lấy...';
   try {
-    const article = await fetchArticleByMetaApi(url);
+    const article = await fetchArticleSmart(url);
     els.articleInput.value = article.slice(0, 8000);
     markLinkScanned(url);
     removeUrlFromInput(url);
@@ -871,6 +962,19 @@ function normalizeAiComment(value) {
     .replace(/\n{2,}/g, '\n')
     .trim();
 }
+function enforceSelectedContact(comment, selected) {
+  const requiredCta = 'Nếu cần biết thêm thông tin về phòng thì ib em nhé.';
+  const normalized = normalizeAiComment(comment);
+  if (!normalized || /^next$/i.test(normalized)) return normalized;
+  const contact = normalizeContactInfo(selected?.contact).replace(/\s*\|\s*/g, ' · ');
+  if (!contact) return normalized;
+  const lines = normalized
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+    .filter(line => !/^📞/u.test(line) && line.toLowerCase() !== requiredCta.toLowerCase());
+  return [...lines, `📞 ${contact}`, requiredCta].join('\n');
+}
 function parseJsonResult(raw) {
   let text = stripAiWrapper(raw);
   const match = text.match(/\{[\s\S]*\}/);
@@ -960,7 +1064,7 @@ async function aiCreateComment(article) {
   });
   const parsed = parseJsonResult(raw);
   const selected = resolveSelectedListing(listings, parsed, raw);
-  const comment = field(parsed.comment || stripAiWrapper(raw));
+  const comment = enforceSelectedContact(field(parsed.comment || stripAiWrapper(raw)), selected);
   if (/^next$/i.test(comment)) {
     return { classification: 'next', selected: null, comment: 'next' };
   }
@@ -1090,15 +1194,33 @@ async function closeTabIfNeeded(tabId) {
 }
 async function checkExtension() {
   els.extensionBadge.textContent = '🧩 Đang kết nối Extension...';
+  els.extensionBadge.disabled = true;
   try {
-    const response = await sendExt({ type: 'PING' }, 8000);
-    els.extensionBadge.textContent = `🧩 Extension sẵn sàng${response.version ? ' · v' + response.version : ''}`;
+    const response = await sendExt({ type: 'PING', action: 'PING' }, 8000);
+    const data = bridgeResponseData(response);
+    const version = field(data.version || response.version);
+    extensionInfo = { ready: true, version };
+    els.extensionBadge.textContent = `🧩 Extension sẵn sàng${version ? ' · v' + version : ''}`;
     els.extensionBadge.style.background = '#ecfdf3';
     els.extensionBadge.style.borderColor = '#bbf7d0';
-  } catch {
+    els.extensionBadge.style.color = '#166534';
+    return response;
+  } catch (error) {
+    extensionInfo = { ready: false, version: '' };
     els.extensionBadge.textContent = '🧩 Chưa kết nối Extension';
     els.extensionBadge.style.background = '#fff7ed';
     els.extensionBadge.style.borderColor = '#fed7aa';
+    els.extensionBadge.style.color = '#9a3412';
+    throw error;
+  } finally {
+    els.extensionBadge.disabled = false;
+  }
+}
+async function ensureExtensionReady() {
+  try {
+    return await checkExtension();
+  } catch {
+    throw new Error('Chưa kết nối Extension. Hãy cài/bật Extension, cho phép Extension chạy trên trang web này rồi bấm lại trạng thái kết nối.');
   }
 }
 async function preflightBeforeRun() {
@@ -1106,8 +1228,10 @@ async function preflightBeforeRun() {
   const listings = await dbAll();
   if (!listings.length) throw new Error('Kho mẫu đang trống. Hãy thêm ít nhất 1 mẫu phòng/căn.');
   if (listings.some(item => !normalizeContactInfo(item.contact))) throw new Error('Có mẫu trong kho chưa có thông tin liên hệ bắt buộc. Hãy sửa mẫu và nhập liên hệ.');
+  await ensureExtensionReady();
 }
 async function scanGroupLinksToInput({ silent = false } = {}) {
+  await ensureExtensionReady();
   const scanMode = getScanMode();
   const groups = parseGroupLines();
   const limit = numberInputValue(els.groupLimitInput, 5, 1, 50);
@@ -1136,19 +1260,20 @@ async function scanGroupLinksToInput({ silent = false } = {}) {
     closeAfter: true
   }, 15 * 60 * 1000);
 
-  const found = filterUnscannedLinks(response.links || response.urls || response.postLinks || []);
+  const responseData = bridgeResponseData(response);
+  const found = filterUnscannedLinks(extractLinksFromExtensionResponse(response));
   const merged = uniqueUrls([...urls(), ...found]);
   els.facebookUrlsInput.value = merged.join('\n');
   updateCounters();
   saveDraft();
 
-  const reports = Array.isArray(response.reports) ? response.reports : [];
+  const reports = Array.isArray(responseData.reports) ? responseData.reports : [];
   const reportText = reports.map(r => `${r.source || r.groupId || scanModeLabel(scanMode)}: ${r.count || 0} link`).join(' | ');
   if (found.length) {
     setGroupStatus(`Đã lấy ${found.length} link mới${reportText ? ' — ' + reportText : ''}.`, 'ok');
     if (!silent) toast(`Đã quét được ${found.length} link mới`);
   } else {
-    setGroupStatus(response.error || `Không có link mới sau khi lọc trùng${reportText ? ' — ' + reportText : ''}.`, 'warn');
+    setGroupStatus(responseData.error || response.error || `Không có link mới sau khi lọc trùng${reportText ? ' — ' + reportText : ''}.`, 'warn');
     if (!silent) toast('Không có link mới sau khi lọc trùng.', 'warning');
   }
   return found;
@@ -1157,6 +1282,8 @@ async function scanGroupLinksManual() {
   if (isRunning) return;
   isRunning = true;
   els.scanGroupLinksBtn.disabled = true;
+  const oldText = els.scanGroupLinksBtn.textContent;
+  els.scanGroupLinksBtn.textContent = '⏳ Đang quét...';
   try {
     await scanGroupLinksToInput();
   } catch (error) {
@@ -1165,6 +1292,7 @@ async function scanGroupLinksManual() {
   } finally {
     isRunning = false;
     els.scanGroupLinksBtn.disabled = false;
+    els.scanGroupLinksBtn.textContent = oldText;
   }
 }
 async function processOneFacebookUrl(url, index = 0, total = 1) {
@@ -1172,7 +1300,7 @@ async function processOneFacebookUrl(url, index = 0, total = 1) {
 
   let article = '';
   try {
-    article = await fetchArticleByMetaApi(url);
+    article = await fetchArticleSmart(url);
     els.articleInput.value = article.slice(0, 8000);
     updateCounters();
     saveDraft();
@@ -1220,27 +1348,35 @@ async function processOneFacebookUrl(url, index = 0, total = 1) {
   if (wantsImage && !requireImage) logLine('⚠️ Mẫu AI chọn chưa lưu ảnh nên chỉ có thể gửi phần văn bản.');
 
   try {
-    const sent = await sendExt({
+    const allowTextFallback = !!els.fallbackTextCheckbox.checked;
+    const sentResponse = await sendExt({
       type: 'FB_COMMENT_WITH_IMAGE',
+      action: 'FB_COMMENT_WITH_IMAGE',
       url,
       comment: ai.comment,
       imageDataUrl: image?.dataUrl || '',
       imageName: image?.name || 'anh_mau.jpg',
       requireImage,
-      fallbackText: requireImage ? false : els.fallbackTextCheckbox.checked,
+      fallbackText: allowTextFallback,
       closeAfter: els.closeTabCheckbox.checked
     }, 150000);
-    if (!sent.textVerified) throw new Error('Facebook chưa xác nhận văn bản được dán đúng cấu trúc.');
-    if (requireImage && !sent.imageAttached) throw new Error('Ảnh của mẫu AI chọn chưa được gắn vào bình luận.');
-    logLine(`✅ Đã gửi comment${sent.imageAttached ? ' kèm đúng ảnh mẫu' : ' dạng chữ'}: ${ai.comment.slice(0, 100)}${ai.comment.length > 100 ? '...' : ''}`);
-    return { ok: true, skipped: false };
+    const sent = bridgeResponseData(sentResponse);
+    const textVerified = sent.textVerified === true || sent.textPasted === true || sent.commentSent === true || sent.submitted === true || sent.sent === true;
+    const imageAttached = sent.imageAttached === true || sent.imagePasted === true || sent.hasImage === true;
+    if (!textVerified) throw new Error('Facebook chưa xác nhận văn bản được dán đúng cấu trúc.');
+    if (requireImage && !imageAttached && !allowTextFallback) throw new Error('Ảnh của mẫu AI chọn chưa được gắn vào bình luận.');
+    if (requireImage && !imageAttached && allowTextFallback) {
+      logLine('⚠️ Không gắn được ảnh; Extension đã gửi phần chữ theo cấu hình dự phòng.');
+    }
+    logLine(`✅ Đã gửi comment${imageAttached ? ' kèm đúng ảnh mẫu' : ' dạng chữ'}: ${ai.comment.slice(0, 100)}${ai.comment.length > 100 ? '...' : ''}`);
+    return { ok: true, skipped: false, imageAttached, textFallback: requireImage && !imageAttached };
   } catch (error) {
     logLine(`❌ Lỗi comment: ${getErrorText(error)}. Link đã được ghi vào danh sách đã quét vì nội dung bài đã đọc xong.`);
     return { ok: false, skipped: true, error: getErrorText(error) };
   }
 }
 async function runFacebookLinksQueue(list, { clearLog = true, manageRunning = true } = {}) {
-  const queue = uniqueUrls(list);
+  const queue = filterUnscannedLinks(list);
   if (!queue.length) {
     toast('Không có link Facebook mới để chạy.', 'warning');
     return;
@@ -1264,20 +1400,36 @@ async function runFacebookLinksQueue(list, { clearLog = true, manageRunning = tr
     els.runExistingLinksBtn.textContent = '⏳ Đang chạy link hiện có...';
   }
   els.runFacebookBtn.textContent = '⏳ Đang chạy...';
-  if (clearLog && els.runLog) els.runLog.textContent = '';
 
+  const summary = { success: 0, next: 0, failed: 0, textFallback: 0 };
   try {
     for (let i = 0; i < queue.length; i++) {
       if (!manageRunning && !groupLoopRunning) break;
       const link = queue[i];
       const result = await processOneFacebookUrl(link, i + 1, queue.length);
       const shouldRunNextImmediately = result?.reason === 'next';
-      if (i < queue.length - 1 && (!manageRunning || groupLoopRunning) && !shouldRunNextImmediately) {
+      if (result?.reason === 'next') summary.next += 1;
+      else if (result?.ok) {
+        summary.success += 1;
+        if (result.textFallback) summary.textFallback += 1;
+      } else summary.failed += 1;
+
+      const stillRunning = () => manageRunning ? isRunning : groupLoopRunning;
+      if (i < queue.length - 1 && stillRunning() && !shouldRunNextImmediately) {
         const pause = numberInputValue(els.linkPauseSecondsInput, 60, 0, 86400);
-        await waitCountdown(pause, remain => `Đã xử lý link ${i + 1}/${queue.length}. Nghỉ ${remain} giây rồi chạy link tiếp theo...`);
+        await waitCountdown(
+          pause,
+          remain => `Đã xử lý link ${i + 1}/${queue.length}. Nghỉ ${remain} giây rồi chạy link tiếp theo...`,
+          stillRunning
+        );
       }
     }
-    toast('Đã chạy xong danh sách link Facebook');
+    const parts = [`${summary.success} đã comment`, `${summary.next} next`, `${summary.failed} lỗi`];
+    if (summary.textFallback) parts.push(`${summary.textFallback} gửi chữ do ảnh lỗi`);
+    const message = `Đã chạy xong: ${parts.join(' · ')}.`;
+    setGroupStatus(message, summary.failed ? 'warn' : 'ok');
+    toast(message, summary.failed ? 'warning' : 'success');
+    return summary;
   } finally {
     if (manageRunning) isRunning = false;
     els.runFacebookBtn.disabled = false;
@@ -1300,7 +1452,6 @@ async function runClosedGroupLoop() {
 
   isRunning = true;
   groupLoopRunning = true;
-  if (els.runLog) els.runLog.textContent = '';
   els.autoGroupLoopBtn.disabled = true;
   els.autoGroupLoopBtn.textContent = '⏳ Đang chạy quy trình...';
   els.scanGroupLinksBtn.disabled = true;
@@ -1331,7 +1482,11 @@ async function runClosedGroupLoop() {
 
       if (!groupLoopRunning) break;
       const pause = numberInputValue(els.loopPauseSecondsInput, 240, 0, 86400);
-      await waitCountdown(pause, remain => `Vòng ${cycle} đã xong. Nghỉ ${remain} giây rồi quét tiếp...`);
+      await waitCountdown(
+        pause,
+        remain => `Vòng ${cycle} đã xong. Nghỉ ${remain} giây rồi quét tiếp...`,
+        () => groupLoopRunning
+      );
       cycle += 1;
     }
   } finally {
@@ -1397,6 +1552,14 @@ function requireElements() {
   if (missing.length) throw new Error('Thiếu phần tử giao diện: ' + missing.join(', '));
 }
 function wire() {
+  els.extensionBadge.addEventListener('click', async () => {
+    try {
+      await checkExtension();
+      toast('Extension đã kết nối', 'success');
+    } catch (error) {
+      toast(getErrorText(error) || 'Chưa kết nối được Extension', 'warning');
+    }
+  });
   els.toggleKeyBtn.addEventListener('click', () => {
     const show = els.apiKeyInput.type === 'password';
     els.apiKeyInput.type = show ? 'text' : 'password';
@@ -1463,7 +1626,7 @@ async function init() {
     await renderListings();
     renderScannedLinks();
     syncUrlInputFiltered();
-    checkExtension();
+    checkExtension().catch(() => {});
   } catch (error) {
     console.error(error);
     alert('Lỗi khởi tạo giao diện: ' + getErrorText(error));

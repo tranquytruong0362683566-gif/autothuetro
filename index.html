@@ -90,6 +90,8 @@
       font-weight:900;
       white-space:nowrap;
     }
+    .badge-button{cursor:pointer;font-family:inherit}
+    .badge-button:hover{filter:brightness(.985);transform:translateY(-1px)}
 
     .flow{display:grid;gap:14px}
     .workspace{display:grid;grid-template-columns:minmax(0,1.28fr) minmax(350px,.72fr);gap:14px;align-items:start}
@@ -183,7 +185,7 @@
     .btn-muted{color:#475467;background:#fff;border-color:var(--line)}
     .btn-danger{color:var(--red);background:var(--redsoft);border-color:#fecaca}
     .btn-sm{min-height:32px;padding:7px 10px;border-radius:9px;font-size:12px}
-    .primary-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}
+    .primary-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center}
     .primary-row .btn-primary{min-height:50px;font-size:15px;border-radius:15px}
     .test-comment-btn{width:100%;min-height:44px;margin-top:2px}
     .existing-links-btn{width:100%;min-height:46px;margin-top:3px;border-radius:14px}
@@ -314,7 +316,7 @@
           <p>Web GitHub Pages kết nối Chrome Extension để quét nhóm, đọc bài, tạo bình luận và đăng ảnh.</p>
         </div>
       </div>
-      <span class="badge" id="extensionBadge">🧩 Đang kết nối Extension...</span>
+      <button class="badge badge-button" id="extensionBadge" type="button" title="Bấm để kiểm tra lại kết nối Extension">🧩 Đang kết nối Extension...</button>
     </header>
 
     <section class="flow">
@@ -443,9 +445,9 @@
               </div>
               <div class="primary-row">
                 <button class="btn btn-primary" id="autoGroupLoopBtn" type="button">▶ Bắt đầu quy trình</button>
+                <button class="btn btn-soft" id="scanGroupLinksBtn" type="button">🔎 Quét 1 lần</button>
                 <button class="btn btn-danger hidden" id="stopGroupLoopBtn" type="button">⛔ Dừng</button>
               </div>
-              <button class="hidden" id="scanGroupLinksBtn" type="button">Quét link nhóm</button>
             </div>
           </section>
 
