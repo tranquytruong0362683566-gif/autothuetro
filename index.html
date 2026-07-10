@@ -3,1604 +3,639 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light">
-  <title>Auto Comment Phòng Trọ / Nhà Ở API - Chuẩn hoá dữ liệu</title>
+  <title>Auto Comment Phòng Trọ / Nhà Ở + Ảnh mẫu — GitHub Web</title>
   <style>
-    :root {
-      --bg: #f3f6fb;
-      --surface: #ffffff;
-      --surface-2: #f8fafc;
-      --surface-3: #eef2ff;
-      --text: #101828;
-      --muted: #667085;
-      --subtle: #98a2b3;
-      --border: #e4e7ec;
-      --border-strong: #d0d5dd;
-      --primary: #4f46e5;
-      --primary-hover: #4338ca;
-      --success: #15803d;
-      --warning: #b45309;
-      --danger: #dc2626;
-      --danger-soft: #fef2f2;
-      --radius-xl: 20px;
-      --radius-lg: 16px;
-      --radius-md: 12px;
-      --shadow: 0 18px 44px rgba(16, 24, 40, .10);
-      --shadow-sm: 0 1px 2px rgba(16, 24, 40, .06);
-      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    :root{
+      --bg:#f4f6fb;
+      --card:#ffffff;
+      --soft:#f8fafc;
+      --soft2:#f1f5f9;
+      --text:#101828;
+      --muted:#667085;
+      --sub:#98a2b3;
+      --line:#e4e7ec;
+      --line2:#d0d5dd;
+      --primary:#4f46e5;
+      --primary2:#4338ca;
+      --primary-soft:#eef2ff;
+      --green:#15803d;
+      --amber:#b45309;
+      --red:#dc2626;
+      --redsoft:#fef2f2;
+      --radius:18px;
+      --shadow:0 14px 38px rgba(16,24,40,.07);
+      --shadow-soft:0 1px 2px rgba(16,24,40,.04);
+      --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
     }
 
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: var(--font);
-      color: var(--text);
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family:var(--font);
+      color:var(--text);
       background:
-        radial-gradient(circle at top left, rgba(79,70,229,.11), transparent 28%),
-        radial-gradient(circle at top right, rgba(14,165,233,.10), transparent 30%),
-        var(--bg);
+        radial-gradient(circle at top left,rgba(79,70,229,.08),transparent 36%),
+        linear-gradient(180deg,#f8fafc 0%,var(--bg) 48%,#eef2f7 100%);
+    }
+    button,input,textarea,select{font:inherit}
+    button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+    button:disabled{opacity:.58;cursor:not-allowed}
+    button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible{
+      outline:3px solid rgba(79,70,229,.18);
+      outline-offset:2px;
     }
 
-    button, input, textarea, select { font: inherit; }
-    button { -webkit-tap-highlight-color: transparent; }
-    button:focus-visible,
-    input:focus-visible,
-    textarea:focus-visible,
-    select:focus-visible {
-      outline: 3px solid rgba(79,70,229,.22);
-      outline-offset: 2px;
+    .wrap{width:min(100%,1180px);margin:0 auto;padding:18px}
+    .hero{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      margin-bottom:14px;
+      padding:18px 20px;
+      background:rgba(255,255,255,.92);
+      border:1px solid rgba(228,231,236,.96);
+      border-radius:24px;
+      box-shadow:var(--shadow-soft);
+      backdrop-filter:blur(10px);
+    }
+    .brand{display:flex;align-items:center;gap:13px;min-width:0}
+    .logo{
+      width:46px;
+      height:46px;
+      flex:0 0 46px;
+      border-radius:16px;
+      display:grid;
+      place-items:center;
+      color:#fff;
+      font-size:23px;
+      background:linear-gradient(135deg,#4f46e5,#7c3aed);
+      box-shadow:0 10px 22px rgba(79,70,229,.18);
+    }
+    h1{margin:0;font-size:20px;letter-spacing:-.025em;color:#1f1b5f;line-height:1.2}
+    .brand p{margin:4px 0 0;color:var(--muted);font-size:12.5px;line-height:1.45}
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-height:32px;
+      padding:7px 11px;
+      border-radius:999px;
+      background:var(--primary-soft);
+      border:1px solid #d9ddff;
+      color:#312e81;
+      font-size:12px;
+      font-weight:900;
+      white-space:nowrap;
     }
 
-    .app-shell {
-      width: min(100%, 1180px);
-      margin: 0 auto;
-      padding: 22px;
+    .flow{display:grid;gap:14px}
+    .workspace{display:grid;grid-template-columns:minmax(0,1.28fr) minmax(350px,.72fr);gap:14px;align-items:start}
+    .main-stack,.side-stack{display:grid;gap:14px;min-width:0}
+
+    .card,.output,.selected-box,details.clean{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:22px;
+      box-shadow:var(--shadow-soft);
+    }
+    .card{padding:16px}
+    .card-head,.sample-head{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:12px;
+    }
+    .title{margin:0;font-size:15.5px;color:#1f2937;letter-spacing:-.015em;line-height:1.25}
+    .desc{margin:4px 0 0;color:var(--muted);font-size:12.5px;line-height:1.45}
+    .step{
+      min-width:30px;
+      height:30px;
+      border-radius:11px;
+      background:var(--primary);
+      color:#fff;
+      display:grid;
+      place-items:center;
+      font-weight:900;
+      font-size:13px;
+      box-shadow:0 8px 16px rgba(79,70,229,.15);
     }
 
-    .hero {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 18px;
-      align-items: center;
-      margin-bottom: 18px;
-      padding: 20px;
-      background: rgba(255,255,255,.90);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-xl);
-      box-shadow: var(--shadow-sm);
-      backdrop-filter: blur(14px);
+    .form{display:grid;gap:12px}
+    .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    .group{display:grid;gap:7px;min-width:0}
+    .row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
+    .row-left{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+    .minirow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    label{color:#475467;font-size:11px;font-weight:900;letter-spacing:.055em;text-transform:uppercase}
+    .hint,.counter{color:var(--sub);font-size:12px;line-height:1.42}
+    .counter{white-space:nowrap}
+    .status.ok{color:var(--green);font-weight:800}
+    .status.warn{color:var(--amber);font-weight:800}
+    .status.error{color:var(--red);font-weight:800}
+
+    input[type=text],input[type=password],input[type=number],textarea,select{
+      width:100%;
+      min-width:0;
+      color:var(--text);
+      background:#fff;
+      border:1px solid var(--line2);
+      border-radius:13px;
+      padding:10px 12px;
+      font-size:14px;
+      line-height:1.5;
+      box-shadow:0 1px 0 rgba(16,24,40,.02);
+      transition:border-color .14s,box-shadow .14s,background .14s;
     }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 13px;
-      min-width: 0;
+    input:focus,textarea:focus,select:focus{
+      border-color:var(--primary);
+      box-shadow:0 0 0 4px rgba(79,70,229,.08);
+      outline:none;
     }
+    textarea{resize:vertical;min-height:96px}
+    #groupIdsInput{min-height:104px}
+    #facebookUrlsInput{min-height:138px}
+    #articleInput{min-height:160px}
+    #productLinkInput{min-height:72px}
+    #commentedLinksInput{min-height:92px}
+    #listingContactInput{min-height:82px}
+    .hidden{display:none!important}
+    .hidden-data{position:absolute!important;left:-99999px!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important}
 
-    .brand-logo {
-      width: 48px;
-      height: 48px;
-      display: grid;
-      place-items: center;
-      flex: 0 0 auto;
-      color: #fff;
-      font-size: 23px;
-      border-radius: 16px;
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
-      box-shadow: 0 12px 22px rgba(79,70,229,.23);
+    .btn{
+      border:1px solid transparent;
+      border-radius:12px;
+      padding:10px 13px;
+      min-height:40px;
+      background:#fff;
+      font-size:13px;
+      font-weight:900;
+      line-height:1.2;
+      transition:transform .14s,background .14s,border-color .14s,color .14s,box-shadow .14s;
     }
+    .btn:hover:not(:disabled){transform:translateY(-1px)}
+    .btn-primary{color:#fff;background:var(--primary);box-shadow:0 10px 18px rgba(79,70,229,.16)}
+    .btn-primary:hover:not(:disabled){background:var(--primary2)}
+    .btn-soft{color:var(--primary);background:var(--primary-soft);border-color:#d9ddff}
+    .btn-muted{color:#475467;background:#fff;border-color:var(--line)}
+    .btn-danger{color:var(--red);background:var(--redsoft);border-color:#fecaca}
+    .btn-sm{min-height:32px;padding:7px 10px;border-radius:9px;font-size:12px}
+    .primary-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}
+    .primary-row .btn-primary{min-height:50px;font-size:15px;border-radius:15px}
+    .test-comment-btn{width:100%;min-height:44px;margin-top:2px}
+    .existing-links-btn{width:100%;min-height:46px;margin-top:3px;border-radius:14px}
 
-    .brand h1 {
-      margin: 0;
-      font-size: 20px;
-      line-height: 1.15;
-      letter-spacing: -.03em;
-      color: #1f1b5f;
+    .advanced-card{padding:0;overflow:hidden}
+    .advanced-details{padding:0}
+    .advanced-summary{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      padding:16px 18px;
+      list-style:none;
+      cursor:pointer;
+      user-select:none;
     }
-
-    .brand p {
-      margin: 5px 0 0;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.4;
+    .advanced-summary::-webkit-details-marker{display:none}
+    .advanced-summary::after{
+      content:'Mở';
+      align-self:center;
+      color:var(--primary);
+      background:var(--primary-soft);
+      border:1px solid #d9ddff;
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:12px;
+      font-weight:900;
+      white-space:nowrap;
     }
-
-    .badge-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      min-height: 32px;
-      padding: 7px 10px;
-      color: #312e81;
-      background: #eef2ff;
-      border: 1px solid #d9ddff;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 900;
-      white-space: nowrap;
+    .advanced-details[open] .advanced-summary{border-bottom:1px solid var(--line)}
+    .advanced-details[open] .advanced-summary::after{content:'Ẩn'}
+    .advanced-body{padding:16px;display:grid;gap:12px}
+    .setting-grid{display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:12px;align-items:start}
+    .setting-box{
+      display:grid;
+      gap:10px;
+      min-width:0;
+      padding:12px;
+      background:#fbfcff;
+      border:1px solid var(--line);
+      border-radius:18px;
     }
+    .setting-box-title{font-size:12px;font-weight:900;color:#312e81;letter-spacing:.03em;text-transform:uppercase}
+    .check-grid{display:grid;gap:8px;margin-top:1px}
+    .checkline{display:flex;gap:8px;align-items:flex-start;color:#475467;font-size:13px;line-height:1.4}
+    .checkline input{margin-top:2px;flex:0 0 auto}
+    #scanConfigSummary{min-height:42px;padding:10px 12px;border:1px solid var(--line);border-radius:13px;background:#fbfcff;color:var(--muted)}
 
-    .layout {
-      display: grid;
-      grid-template-columns: minmax(0, .92fr) minmax(0, 1.38fr);
-      gap: 18px;
-      align-items: start;
+    .output{overflow:hidden}
+    .out-head{display:flex;justify-content:space-between;gap:10px;align-items:center;background:#fbfcff;border-bottom:1px solid var(--line);padding:12px 14px}
+    .out-title{color:var(--primary);font-weight:900;font-size:13px}
+    .out-actions{display:flex;gap:7px;flex-wrap:wrap}
+    .out-body{min-height:118px;padding:16px;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;font-size:14px;line-height:1.68}
+    .placeholder{color:var(--sub)}
+    .loading{color:var(--primary)}
+    .error{color:var(--red)}
+
+    .panel{background:#fbfcff;border:1px solid var(--line);border-radius:18px;padding:14px}
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .stat{padding:12px;background:var(--soft);border:1px solid var(--line);border-radius:15px;text-align:center}
+    .stat strong{display:block;font-size:22px;color:#1f1b5f;line-height:1}
+    .stat span{display:block;margin-top:5px;font-size:12px;color:var(--muted)}
+    .plus-btn{width:42px;height:42px;flex:0 0 42px;border-radius:15px;padding:0;font-size:24px;line-height:1}
+
+    .image-picker{display:grid;grid-template-columns:116px 1fr;gap:12px;align-items:center}
+    .image-preview{width:116px;height:88px;border-radius:15px;background:#f2f4f7;border:1px dashed #cbd5e1;display:grid;place-items:center;overflow:hidden;color:#98a2b3;font-size:12px;text-align:center;padding:8px}
+    .image-preview img{width:100%;height:100%;object-fit:cover}
+    .file-input{display:none}
+    .cards{display:grid;grid-template-columns:1fr;gap:10px}
+    .listing{display:grid;grid-template-columns:74px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:17px;background:#fff}
+    .thumb{width:74px;height:58px;border-radius:13px;background:var(--primary-soft);border:1px solid #d9ddff;overflow:hidden;display:grid;place-items:center;color:#4f46e5;font-weight:900;flex:0 0 auto}
+    .thumb img{width:100%;height:100%;object-fit:cover}
+    .listing-name{min-width:0}
+    .address{font-weight:900;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .type{margin-top:4px;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .lactions{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+    .empty{grid-column:1/-1;padding:16px;border:1px dashed var(--line2);border-radius:16px;background:var(--soft);color:var(--muted);font-size:13px;text-align:center}
+
+    .selected-box{display:none;padding:12px;border-color:#d9ddff;background:#f8faff}
+    .selected-box.show{display:flex;gap:12px;align-items:center}
+    .selected-box img{width:96px;height:72px;border-radius:12px;object-fit:cover;border:1px solid var(--line)}
+    .selected-box strong{display:block;font-size:13px;color:#312e81}
+    .selected-box span{display:block;margin-top:4px;font-size:12px;color:var(--muted)}
+
+    details.clean{padding:11px 12px;background:#fbfcff}
+    details.clean summary{cursor:pointer;color:#475467;font-size:13px;font-weight:900;list-style:none;user-select:none}
+    details.clean summary::-webkit-details-marker{display:none}
+    details.clean summary::before{content:'▸';display:inline-block;margin-right:6px;color:var(--primary);transition:transform .14s}
+    details.clean[open] summary::before{transform:rotate(90deg)}
+    .log{max-height:260px;overflow:auto;background:#0b1220;color:#d8e2f2;border-radius:16px;padding:12px;font-size:12px;line-height:1.55;white-space:pre-wrap}
+    .toast-host{position:fixed;right:18px;bottom:18px;z-index:99;display:grid;gap:10px;pointer-events:none}
+    .toast{pointer-events:auto;width:min(380px,calc(100vw - 36px));background:#fff;color:#344054;border:1px solid var(--line);border-left:5px solid var(--primary);box-shadow:var(--shadow);border-radius:14px;padding:12px 13px;font-size:13px;line-height:1.45}
+    .toast.success{border-left-color:var(--green)}
+    .toast.warning{border-left-color:#f59e0b}
+    .toast.error{border-left-color:var(--red)}
+
+    @media(max-width:1080px){
+      .workspace{grid-template-columns:1fr}
+      .setting-grid{grid-template-columns:1fr 1fr}
+      .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
     }
-
-    .stack { display: grid; gap: 16px; }
-
-    .card {
-      background: rgba(255,255,255,.94);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-xl);
-      box-shadow: var(--shadow-sm);
-      padding: 18px;
-      backdrop-filter: blur(14px);
-    }
-
-    .section-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 12px;
-      margin-bottom: 14px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .section-title {
-      margin: 0;
-      font-size: 15px;
-      color: #1f2937;
-      letter-spacing: -.01em;
-    }
-
-    .section-desc {
-      margin: 4px 0 0;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.45;
-    }
-
-    .step-dot {
-      display: inline-flex;
-      justify-content: center;
-      align-items: center;
-      min-width: 28px;
-      height: 28px;
-      color: #fff;
-      background: var(--primary);
-      border-radius: 10px;
-      font-weight: 900;
-      font-size: 13px;
-    }
-
-    .form-grid { display: grid; gap: 13px; }
-    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-    .form-group { display: grid; gap: 7px; min-width: 0; }
-
-    .label-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-
-    label {
-      color: #475467;
-      font-size: 11px;
-      font-weight: 900;
-      letter-spacing: .055em;
-      text-transform: uppercase;
-    }
-
-    .hint, .counter {
-      color: var(--subtle);
-      font-size: 12px;
-      line-height: 1.42;
-    }
-
-    .counter { white-space: nowrap; }
-
-    input[type="text"],
-    input[type="password"],
-    textarea,
-    select {
-      width: 100%;
-      min-width: 0;
-      color: var(--text);
-      background: #fff;
-      border: 1px solid var(--border-strong);
-      border-radius: var(--radius-md);
-      padding: 11px 12px;
-      font-size: 14px;
-      line-height: 1.48;
-      box-shadow: 0 1px 0 rgba(16,24,40,.02);
-      transition: border-color .14s ease, box-shadow .14s ease, background .14s ease;
-    }
-
-    input:focus, textarea:focus, select:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 4px rgba(79,70,229,.09);
-      outline: none;
-    }
-
-    textarea { resize: vertical; min-height: 96px; }
-    #articleInput { min-height: 160px; }
-    #productNameInput { min-height: 210px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
-    #normalizedPreview { min-height: 180px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; background: #fbfcff; }
-
-    textarea::placeholder, input::placeholder { color: #98a2b3; }
-
-    .api-panel {
-      display: grid;
-      gap: 12px;
-      padding: 14px;
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-    }
-
-    .api-actions,
-    .mini-actions,
-    .main-actions,
-    .output-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .api-actions { justify-content: flex-end; }
-    .mini-actions { justify-content: flex-start; }
-    .main-actions { display: grid; grid-template-columns: 1.6fr 1fr; gap: 10px; }
-
-    .btn {
-      border: 1px solid transparent;
-      border-radius: 11px;
-      min-height: 40px;
-      padding: 10px 13px;
-      font-size: 13px;
-      font-weight: 900;
-      cursor: pointer;
-      transition: transform .14s ease, background .14s ease, border-color .14s ease, color .14s ease, opacity .14s ease;
-      user-select: none;
-      white-space: nowrap;
-    }
-
-    .btn:hover:not(:disabled) { transform: translateY(-1px); }
-    .btn:active:not(:disabled) { transform: translateY(0); }
-    .btn:disabled { cursor: not-allowed; opacity: .62; }
-    .btn-primary { color: #fff; background: var(--primary); box-shadow: 0 10px 18px rgba(79,70,229,.18); }
-    .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
-    .btn-soft { color: var(--primary); background: #eef2ff; border-color: #d9ddff; }
-    .btn-soft:hover:not(:disabled) { background: #e0e7ff; }
-    .btn-muted { color: #475467; background: #fff; border-color: var(--border); }
-    .btn-muted:hover:not(:disabled) { background: #f9fafb; }
-    .btn-danger { color: var(--danger); background: var(--danger-soft); border-color: #fecaca; }
-    .btn-danger:hover:not(:disabled) { background: #fee2e2; }
-    .btn-sm { min-height: 32px; padding: 7px 10px; border-radius: 9px; font-size: 12px; }
-
-    #generateBtn { min-height: 50px; font-size: 15px; }
-
-    .status-line {
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.4;
-    }
-    .status-line.ok { color: var(--success); font-weight: 800; }
-    .status-line.warn { color: var(--warning); font-weight: 800; }
-
-
-    .quick-stats {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    .stat {
-      padding: 11px;
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-    }
-
-    .stat strong { display: block; font-size: 19px; color: #1f2937; letter-spacing: -.02em; }
-    .stat span { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
-
-    .listing-cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 10px;
-      max-height: 430px;
-      overflow: auto;
-      padding: 2px 4px 2px 1px;
-    }
-
-    .listing-card {
-      display: grid;
-      grid-template-columns: auto minmax(0, 1fr) auto;
-      gap: 10px;
-      align-items: center;
-      padding: 12px;
-      background: linear-gradient(180deg, #fff, #fbfcff);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      box-shadow: 0 1px 2px rgba(16,24,40,.04);
-      transition: transform .14s ease, border-color .14s ease, box-shadow .14s ease;
-    }
-
-    .listing-card:hover {
-      transform: translateY(-1px);
-      border-color: #c7d2fe;
-      box-shadow: 0 10px 22px rgba(16,24,40,.08);
-    }
-
-    .listing-index {
-      width: 30px;
-      height: 30px;
-      display: grid;
-      place-items: center;
-      color: #fff;
-      background: var(--primary);
-      border-radius: 11px;
-      font-size: 12px;
-      font-weight: 900;
-      box-shadow: 0 8px 16px rgba(79,70,229,.18);
-    }
-
-    .listing-main {
-      min-width: 0;
-      display: grid;
-      gap: 5px;
-    }
-
-    .listing-address {
-      color: #1f2937;
-      font-size: 13px;
-      font-weight: 900;
-      line-height: 1.25;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .listing-type {
-      width: fit-content;
-      max-width: 100%;
-      display: inline-flex;
-      align-items: center;
-      min-height: 24px;
-      padding: 4px 8px;
-      color: #3730a3;
-      background: #eef2ff;
-      border: 1px solid #d9ddff;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 800;
-      line-height: 1.2;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .listing-actions {
-      display: flex;
-      gap: 6px;
-      justify-content: flex-end;
-    }
-
-    .ai-data-hidden {
-      display: none !important;
-    }
-
-    .listing-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      min-height: 24px;
-      padding: 4px 8px;
-      color: #344054;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 999px;
-      font-size: 12px;
-      line-height: 1.2;
-    }
-
-    .empty-box {
-      padding: 18px;
-      color: var(--subtle);
-      background: #fbfcff;
-      border: 1px dashed #cbd5e1;
-      border-radius: 15px;
-      text-align: center;
-      font-size: 13px;
-      line-height: 1.55;
-    }
-
-    .output-box {
-      overflow: hidden;
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-xl);
-    }
-
-    .output-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      padding: 12px 14px;
-      background: #fff;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .output-title {
-      color: var(--primary);
-      font-size: 13px;
-      font-weight: 900;
-    }
-
-    #output {
-      min-height: 114px;
-      padding: 16px;
-      color: var(--text);
-      font-size: 14px;
-      line-height: 1.68;
-      white-space: pre-wrap;
-      word-break: break-word;
-      overflow-wrap: anywhere;
-    }
-    #output.placeholder { color: var(--subtle); }
-    #output.loading { color: var(--primary); }
-    #output.error { color: var(--danger); }
-
-    .toast-host {
-      position: fixed;
-      right: 18px;
-      bottom: 18px;
-      z-index: 99;
-      display: grid;
-      gap: 10px;
-      pointer-events: none;
-    }
-
-    .toast {
-      width: min(380px, calc(100vw - 36px));
-      pointer-events: auto;
-      color: #344054;
-      background: #fff;
-      border: 1px solid var(--border);
-      border-left: 5px solid var(--primary);
-      border-radius: 14px;
-      box-shadow: var(--shadow);
-      padding: 12px 13px;
-      font-size: 13px;
-      line-height: 1.45;
-      animation: toastIn .18s ease-out;
-    }
-    .toast.success { border-left-color: var(--success); }
-    .toast.error { border-left-color: var(--danger); }
-    .toast.warning { border-left-color: #f59e0b; }
-
-    @keyframes toastIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    @media (max-width: 980px) {
-      .layout { grid-template-columns: 1fr; }
-      .quick-stats { grid-template-columns: repeat(3, 1fr); }
-    }
-
-    @media (max-width: 720px) {
-      .app-shell { padding: 12px; }
-      .hero { grid-template-columns: 1fr; padding: 15px; }
-      .badge-row { justify-content: flex-start; }
-      .card { padding: 15px; border-radius: 16px; }
-      .grid-2, .grid-3, .main-actions { grid-template-columns: 1fr; }
-      .quick-stats { grid-template-columns: 1fr; }
-      .listing-cards { grid-template-columns: 1fr; }
-      .listing-card { grid-template-columns: auto minmax(0, 1fr); }
-      .listing-actions { grid-column: 1 / -1; justify-content: flex-start; }
-      .api-actions { justify-content: flex-start; }
-      .output-header { align-items: flex-start; flex-direction: column; }
-      .brand h1 { font-size: 17px; }
+    @media(max-width:780px){
+      .wrap{padding:12px}
+      .hero{display:grid;gap:12px;border-radius:20px}
+      .badge{justify-self:start;white-space:normal;text-align:left}
+      .grid2,.grid3,.setting-grid,.primary-row{grid-template-columns:1fr}
+      .cards{grid-template-columns:1fr}
+      .listing{grid-template-columns:64px minmax(0,1fr)}
+      .thumb{width:64px;height:52px}
+      .lactions{grid-column:1/-1;justify-content:flex-start}
+      .image-picker{grid-template-columns:1fr}
+      .image-preview{width:100%;height:160px}
+      .stats{grid-template-columns:1fr}
+      .out-head{align-items:flex-start;flex-direction:column}
+      .row{align-items:flex-start;flex-direction:column}
     }
   </style>
 </head>
 <body>
-  <main class="app-shell">
+  <main class="wrap">
     <header class="hero">
       <div class="brand">
-        <div class="brand-logo" aria-hidden="true">🏠</div>
+        <div class="logo">🏠</div>
         <div>
           <h1>Auto Comment Phòng Trọ / Nhà Ở</h1>
-          <p>Giao diện chuẩn hoá dữ liệu nhiều địa chỉ, nhiều loại phòng để AI so khớp vị trí và tư vấn tự nhiên hơn.</p>
+          <p>Quét link nhóm → đọc bài viết → AI lọc next/reply → comment kèm ảnh mẫu phù hợp.</p>
         </div>
       </div>
-      <div class="badge-row">
-        <span class="badge">⚡ API MODE</span>
-        <span class="badge">📍 Ưu tiên vị trí</span>
-        <span class="badge">🧠 Kho căn chuẩn hoá</span>
-      </div>
+      <span class="badge" id="extensionBadge">🧩 Đang kiểm tra extension</span>
     </header>
 
-    <div class="layout">
-      <aside class="stack">
-        <section class="card">
-          <div class="section-head">
+    <section class="flow">
+      <section class="card advanced-card">
+        <details class="advanced-details">
+          <summary class="advanced-summary">
             <div>
-              <h2 class="section-title">Cấu hình API</h2>
-              <p class="section-desc">Endpoint mặc định: https://console.flatkey.ai/v1/chat/completions</p>
+              <h2 class="title">Cài đặt nâng cao</h2>
+              <p class="desc">API, model, nguồn quét, số link lấy và thời gian nghỉ được gom gọn tại đây.</p>
             </div>
-            <span class="step-dot">0</span>
-          </div>
-
-          <div class="api-panel" aria-label="Cấu hình API">
-            <div class="form-grid">
-              <div class="form-group">
-                <label for="apiKeyInput">API Key</label>
-                <input type="password" id="apiKeyInput" autocomplete="off" placeholder="sk-YOUR_API_KEY">
-                <div class="status-line" id="apiStatus">Chưa nhập API key</div>
-              </div>
-
-              <div class="form-group">
-                <label for="modelInput">Model</label>
-                <input type="text" id="modelInput" list="modelOptions" value="gpt-5.4-mini" placeholder="Chọn hoặc nhập model GPT khác">
-                <datalist id="modelOptions">
-                  <option value="gpt-4.1-mini"></option>
-                  <option value="gpt-4o"></option>
-                  <option value="gpt-4o-mini"></option>
-                  <option value="gpt-5-mini"></option>
-                  <option value="gpt-5.1"></option>
-                  <option value="gpt-5.3-codex-spark"></option>
-                  <option value="gpt-5.4"></option>
-                  <option value="gpt-5.4-fk-cx"></option>
-                  <option value="gpt-5.4-mini"></option>
-                  <option value="gpt-4.1"></option>
-                  <option value="gpt-4.1-nano"></option>
-                  <option value="o4-mini"></option>
-                  <option value="o3-mini"></option>
-                </datalist>
-              </div>
-
-              <div class="api-actions">
-                <button class="btn btn-soft btn-sm" id="toggleKeyBtn" type="button">👁️ Hiện key</button>
-                <button class="btn btn-primary btn-sm" id="saveApiBtn" type="button">💾 Lưu API</button>
-                <button class="btn btn-danger btn-sm" id="clearApiBtn" type="button">Xoá API</button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="card">
-          <div class="section-head">
-            <div>
-              <h2 class="section-title">Bài viết khách</h2>
-              <p class="section-desc">Dán bài gốc để AI lọc trước. Người cho thuê/bán sẽ trả về <b>next</b>.</p>
-            </div>
-            <span class="step-dot">1</span>
-          </div>
-
-          <div class="form-grid">
-            <div class="form-group">
-              <div class="label-row">
-                <label for="articleInput">Nội dung bài viết khách cần thuê/mua</label>
-                <button class="btn btn-soft btn-sm" id="pasteBtn" type="button">📋 Dán</button>
-              </div>
-              <textarea id="articleInput" maxlength="6000" placeholder="Dán nội dung bài khách cần thuê phòng, thuê nhà, mua nhà hoặc tìm chỗ ở vào đây..."></textarea>
-              <div class="label-row">
-                <span class="hint">AI sẽ bám sát vị trí, ngân sách, loại phòng/nhà và yêu cầu trong bài gốc.</span>
-                <span class="counter" id="articleCounter">0/6000</span>
-              </div>
-            </div>
-
-            <div class="grid-2">
-              <div class="form-group">
-                <label for="toneSelect">Phong cách</label>
-                <select id="toneSelect">
-                  <option value="lịch sự, tự nhiên, chuyên nghiệp, giống người tư vấn phòng trọ/nhà ở thật">🏠 Tư vấn tự nhiên</option>
-                  <option value="chuyên nghiệp, ngắn gọn, giống chủ phòng hoặc môi giới uy tín">💼 Chủ phòng / môi giới uy tín</option>
-                  <option value="thân thiện, dễ gần, phản hồi nhẹ nhàng không gây phiền">🌱 Thân thiện & dễ gần</option>
-                  <option value="rõ ràng, thực tế, tập trung vào khu vực, giá, diện tích, tiện ích, cọc/giấy tờ và thời gian vào ở">📌 Rõ ràng thực tế</option>
-                  <option value="gợi ý mềm, có phòng/nhà phù hợp thì mời inbox, không spam và không ép khách">📩 Gợi ý inbox mềm</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label for="commentModeSelect">Logic trả lời</label>
-                <select id="commentModeSelect">
-                  <option value="auto">Tự nhận diện thuê/mua</option>
-                  <option value="rent">Khách cần thuê</option>
-                  <option value="buy">Khách cần mua</option>
-                  <option value="ask_more">Hỏi thêm nhu cầu</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="card">
-          <div class="section-head">
-            <div>
-              <h2 class="section-title">Liên hệ bắt buộc</h2>
-              <p class="section-desc">AI sẽ chèn tự nhiên 1 lần ở cuối bình luận.</p>
-            </div>
-            <span class="step-dot">3</span>
-          </div>
-
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="productLinkInput">Thông tin liên hệ</label>
-              <textarea id="productLinkInput" required placeholder="VD: SĐT/Zalo 0399 922 123, ib trực tiếp Facebook, hoặc rep comment này để mình gửi ảnh và vị trí."></textarea>
-              <div class="label-row">
-                <span class="hint" id="linkStatus">Bắt buộc nhập thông tin liên hệ</span>
-                <span class="counter" id="linkCounter">0 ký tự</span>
-              </div>
-            </div>
-
-            <div class="main-actions">
-              <button class="btn btn-primary" id="generateBtn" type="button">✨ Tạo bình luận</button>
-              <button class="btn btn-muted" id="clearBtn" type="button">🔄 Làm mới</button>
-            </div>
-          </div>
-        </section>
-      </aside>
-
-      <section class="stack">
-        <section class="card">
-          <div class="section-head">
-            <div>
-              <h2 class="section-title">Kho phòng/nhà đang có</h2>
-              <p class="section-desc">Thêm nhiều địa chỉ, nhiều loại phòng bằng form. Mỗi căn/phòng được lưu riêng để AI không trộn thông tin.</p>
-            </div>
-            <span class="step-dot">2</span>
-          </div>
-
-          <div class="form-grid">
-            <div class="quick-stats">
-              <div class="stat"><strong id="listingTotal">0</strong><span>Tổng căn</span></div>
-              <div class="stat"><strong id="addressTotal">0</strong><span>Khu vực</span></div>
-              <div class="stat"><strong id="typeTotal">0</strong><span>Loại phòng</span></div>
-            </div>
-
-            <textarea id="productNameInput" class="ai-data-hidden" maxlength="12000" required aria-hidden="true" tabindex="-1"></textarea>
-            <span class="counter ai-data-hidden" id="productCounter">0/12000 • 0 căn/phòng</span>
-
-            <div class="card" style="padding:14px;background:#fbfcff;">
-              <div class="section-head" style="margin-bottom:12px;padding-bottom:10px;">
-                <div>
-                  <h3 class="section-title">Thêm 1 căn/phòng vào kho</h3>
-                  <p class="section-desc">Điền các ô chính rồi bấm thêm, hệ thống tự lưu thành dữ liệu chuẩn cho AI.</p>
+            <span class="step">⚙️</span>
+          </summary>
+          <div class="advanced-body">
+            <div class="setting-grid">
+              <div class="setting-box">
+                <div class="setting-box-title">API</div>
+                <div class="group">
+                  <label for="apiKeyInput">API key</label>
+                  <input type="password" id="apiKeyInput" placeholder="sk-...">
+                  <div class="row">
+                    <span class="hint status warn" id="apiStatus">Chưa nhập API key</span>
+                    <button class="btn btn-muted btn-sm" id="toggleKeyBtn" type="button">👁️</button>
+                  </div>
+                </div>
+                <div class="group">
+                  <label for="modelInput">Model</label>
+                  <select id="modelInput">
+                    <option value="gpt-4o-mini">gpt-4o-mini</option>
+                    <option value="gpt-5.4-mini">gpt-5.4-mini</option>
+                    <option value="gpt-4.1-mini">gpt-4.1-mini</option>
+                  </select>
                 </div>
               </div>
 
-              <div class="form-grid">
-                <div class="grid-2">
-                  <div class="form-group">
-                    <label for="listingAddressInput">Địa chỉ / khu vực</label>
-                    <input type="text" id="listingAddressInput" placeholder="VD: 111 Quan Hoa, Cầu Giấy">
+              <div class="setting-box">
+                <div class="setting-box-title">Quét nhóm</div>
+                <div class="group">
+                  <label for="scanSourceModeSelect">Nguồn quét</label>
+                  <select id="scanSourceModeSelect">
+                    <option value="group_latest">Bài viết mới trong nhóm</option>
+                    <option value="group_top">Bài viết Top trong nhóm</option>
+                    <option value="groups_feed">Bản Tin Nhóm</option>
+                    <option value="home_feed">Bài Viết Trang Chủ</option>
+                  </select>
+                </div>
+                <div class="grid2">
+                  <div class="group">
+                    <label for="groupLimitInput">Số link lấy / nhóm</label>
+                    <input type="number" id="groupLimitInput" min="1" max="50" step="1" value="5">
                   </div>
-                  <div class="form-group">
-                    <label for="listingTypeInput">Loại phòng/nhà</label>
-                    <select id="listingTypeInput">
-                      <option value="">Chọn loại</option>
-                      <option>Phòng trọ khép kín</option>
-                      <option>Studio</option>
-                      <option>1K1N</option>
-                      <option>Chung cư mini</option>
-                      <option>Căn hộ</option>
-                      <option>Nhà nguyên căn</option>
-                      <option>Ở ghép</option>
-                      <option>Nhà bán</option>
-                      <option>Mặt bằng</option>
+                  <div class="group">
+                    <label for="linkPauseSecondsInput">Nghỉ sau mỗi link</label>
+                    <input type="number" id="linkPauseSecondsInput" min="0" max="86400" step="1" value="60">
+                  </div>
+                </div>
+                <div class="group">
+                  <label for="loopPauseSecondsInput">Nghỉ sau mỗi vòng quét</label>
+                  <input type="number" id="loopPauseSecondsInput" min="0" max="86400" step="1" value="240">
+                </div>
+              </div>
+
+              <div class="setting-box">
+                <div class="setting-box-title">Bình luận</div>
+                <div class="grid2">
+                  <div class="group">
+                    <label for="toneSelect">Giọng trả lời</label>
+                    <select id="toneSelect">
+                      <option value="lịch sự, tự nhiên, chuyên nghiệp, giống người tư vấn phòng trọ/nhà ở thật">Tư vấn tự nhiên</option>
+                      <option value="chuyên nghiệp, ngắn gọn, giống chủ phòng hoặc môi giới uy tín">Chủ phòng / môi giới uy tín</option>
+                      <option value="thân thiện, dễ gần, phản hồi nhẹ nhàng không gây phiền">Thân thiện & dễ gần</option>
+                      <option value="rõ ràng, thực tế, tập trung vào khu vực, giá, diện tích, tiện ích và thời gian vào ở">Rõ ràng thực tế</option>
+                      <option value="gợi ý mềm, có phòng/nhà phù hợp thì mời inbox, không spam và không ép khách">Gợi ý inbox mềm</option>
+                    </select>
+                  </div>
+                  <div class="group">
+                    <label for="commentModeSelect">Chế độ</label>
+                    <select id="commentModeSelect">
+                      <option value="auto">Tự nhận diện thuê/mua</option>
+                      <option value="rent">Khách cần thuê</option>
+                      <option value="buy">Khách cần mua</option>
+                      <option value="ask_more">Hỏi thêm nhu cầu</option>
                     </select>
                   </div>
                 </div>
-
-                <div class="grid-3">
-                  <div class="form-group">
-                    <label for="listingPriceInput">Giá</label>
-                    <input type="text" id="listingPriceInput" placeholder="VD: 5tr5 / tháng">
-                  </div>
-                  <div class="form-group">
-                    <label for="listingAreaInput">Diện tích</label>
-                    <input type="text" id="listingAreaInput" placeholder="VD: 35m2">
-                  </div>
-                  <div class="form-group">
-                    <label for="listingTermInput">Thời hạn</label>
-                    <input type="text" id="listingTermInput" placeholder="VD: ngắn hạn/lâu dài">
-                  </div>
-                </div>
-
-                <div class="grid-2">
-                  <div class="form-group">
-                    <label for="listingFurnitureInput">Nội thất</label>
-                    <input type="text" id="listingFurnitureInput" placeholder="VD: điều hoà, nóng lạnh, giường, tủ">
-                  </div>
-                  <div class="form-group">
-                    <label for="listingAmenitiesInput">Tiện ích</label>
-                    <input type="text" id="listingAmenitiesInput" placeholder="VD: máy giặt riêng, ban công, ô tô gần nhà">
-                  </div>
-                </div>
-
-                <div class="form-group">
-                  <label for="listingNoteInput">Ghi chú thêm</label>
-                  <input type="text" id="listingNoteInput" placeholder="VD: hợp 1-2 người, vào ở luôn, yên tĩnh, gần chợ">
-                </div>
-
-                <div class="mini-actions">
-                  <button class="btn btn-primary btn-sm" id="addListingBtn" type="button">➕ Thêm vào kho</button>
-                  <button class="btn btn-muted btn-sm" id="resetListingFormBtn" type="button">Làm sạch form</button>
+                <div class="check-grid">
+                  <label class="checkline"><input type="checkbox" id="attachImageCheckbox" checked> Comment kèm ảnh mẫu AI chọn</label>
+                  <label class="checkline"><input type="checkbox" id="fallbackTextCheckbox" checked> Nếu ảnh lỗi vẫn gửi chữ</label>
+                  <label class="checkline"><input type="checkbox" id="closeTabCheckbox" checked> Đóng tab sau khi xong</label>
                 </div>
               </div>
             </div>
 
-            <div class="form-group">
-              <div class="label-row">
-                <div>
-                  <label>Danh sách mẫu đã lưu</label>
-                  <div class="hint">Chỉ hiển thị địa chỉ và loại phòng/nhà. Dữ liệu đầy đủ vẫn được gửi cho AI.</div>
-                </div>
-                <button class="btn btn-danger btn-sm" id="clearListingBtn" type="button">Xoá kho</button>
-              </div>
-              <div class="listing-cards" id="listingCards"></div>
-            </div>
-
-            <textarea id="normalizedPreview" class="ai-data-hidden" readonly aria-hidden="true" tabindex="-1"></textarea>
+            <textarea id="productLinkInput" class="hidden-data" aria-hidden="true" tabindex="-1"></textarea>
+            <span id="linkStatus" class="hidden-data">Thông tin liên hệ đã chuyển vào từng mẫu</span>
+            <span id="linkCounter" class="hidden-data">0 ký tự</span>
+            <button class="hidden" id="saveApiBtn" type="button">Lưu API</button>
+            <button class="hidden" id="clearApiBtn" type="button">Xoá API</button>
           </div>
-        </section>
-
-        <section class="output-box" aria-live="polite">
-          <div class="output-header">
-            <span class="output-title">✨ Kết quả bình luận tư vấn</span>
-            <div class="output-actions">
-              <button class="btn btn-soft btn-sm" id="copyBtn" type="button">Sao chép</button>
-              <button class="btn btn-muted btn-sm" id="saveHistoryBtn" type="button">Lưu lịch sử</button>
-            </div>
-          </div>
-          <div id="output" class="placeholder">Bình luận tư vấn sẽ xuất hiện tại đây...</div>
-        </section>
+        </details>
       </section>
-    </div>
+
+      <div class="workspace">
+        <div class="main-stack">
+          <section class="card">
+            <div class="card-head">
+              <div>
+                <h2 class="title">Nhập link nhóm hoặc UID nhóm cần quét</h2>
+                <p class="desc">Mỗi dòng một UID hoặc link nhóm Facebook. Cấu hình nguồn quét nằm trong Cài đặt nâng cao.</p>
+              </div>
+              <span class="step">1</span>
+            </div>
+            <div class="form">
+              <div class="group">
+                <label for="groupIdsInput">UID / link nhóm Facebook</label>
+                <textarea id="groupIdsInput" placeholder="VD:&#10;1234567890&#10;https://www.facebook.com/groups/tennhom"></textarea>
+              </div>
+              <div class="grid2">
+                <div class="group">
+                  <label>Trạng thái</label>
+                  <div class="hint status warn" id="groupScanStatus">Sẵn sàng.</div>
+                </div>
+                <div class="group">
+                  <label>Đang dùng</label>
+                  <div class="hint" id="scanConfigSummary">Nguồn quét: Bài viết mới trong nhóm · 5 link/nhóm · nghỉ 60s/link · 240s/vòng</div>
+                </div>
+              </div>
+              <div class="primary-row">
+                <button class="btn btn-primary" id="autoGroupLoopBtn" type="button">▶ Bắt đầu quy trình</button>
+                <button class="btn btn-danger hidden" id="stopGroupLoopBtn" type="button">⛔ Dừng</button>
+              </div>
+              <button class="hidden" id="scanGroupLinksBtn" type="button">Quét link nhóm</button>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="card-head">
+              <div>
+                <h2 class="title">Kết quả link quét được</h2>
+                <p class="desc">Link mới sau khi lọc trùng sẽ nằm ở đây, mỗi dòng một link.</p>
+              </div>
+              <span class="step">2</span>
+            </div>
+            <div class="form">
+              <div class="group">
+                <label for="facebookUrlsInput">Link bài viết Facebook</label>
+                <textarea id="facebookUrlsInput" placeholder="Link bài viết sau khi quét sẽ tự xuất hiện ở đây..."></textarea>
+                <div class="row">
+                  <span class="hint">Tự lọc trùng với link đã chạy/comment.</span>
+                  <span class="counter" id="urlCounter">0 link</span>
+                </div>
+                <button class="btn btn-primary existing-links-btn" id="runExistingLinksBtn" type="button">▶ Chạy link hiện có</button>
+              </div>
+              <details class="clean">
+                <summary>Link đã chạy/comment xong</summary>
+                <div class="form" style="margin-top:10px">
+                  <textarea id="commentedLinksInput" readonly></textarea>
+                  <button class="btn btn-danger btn-sm" id="clearCommentedLinksBtn" type="button">Xoá danh sách đã chạy</button>
+                </div>
+              </details>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="card-head">
+              <div>
+                <h2 class="title">Nội dung bài viết gốc</h2>
+                <p class="desc">Khi chạy link, nội dung bài được API trả về sẽ hiển thị tại đây để AI phân tích.</p>
+              </div>
+              <span class="step">3</span>
+            </div>
+            <div class="group">
+              <label for="articleInput">Nội dung bài viết gốc</label>
+              <textarea id="articleInput" placeholder="Nội dung bài viết gốc sẽ tự điền khi chạy..."></textarea>
+              <div class="row">
+                <span class="hint">AI sẽ phân loại: next hoặc reply.</span>
+                <span class="counter" id="articleCounter">0 ký tự</span>
+              </div>
+              <button class="btn btn-soft test-comment-btn" id="generateBtn" type="button">✨ Tạo bình luận thử</button>
+            </div>
+            <button class="hidden" id="fetchArticleApiBtn" type="button">Lấy bằng API</button>
+            <button class="hidden" id="pasteBtn" type="button">Dán</button>
+            <button class="hidden" id="runFacebookBtn" type="button">Chạy link Facebook</button>
+            <button class="hidden" id="clearBtn" type="button">Làm mới bài/link</button>
+          </section>
+
+          <section class="output" aria-live="polite">
+            <div class="out-head">
+              <span class="out-title">Kết quả AI / bình luận</span>
+              <div class="out-actions">
+                <button class="btn btn-soft btn-sm" id="copyBtn" type="button">Sao chép</button>
+                <button class="btn btn-muted btn-sm" id="saveHistoryBtn" type="button">Lưu lịch sử</button>
+              </div>
+            </div>
+            <div id="output" class="out-body placeholder">Kết quả sẽ xuất hiện tại đây...</div>
+          </section>
+
+          <section class="selected-box" id="selectedBox">
+            <img id="selectedImage" alt="Ảnh mẫu đã chọn">
+            <div>
+              <strong id="selectedTitle">Mẫu được chọn</strong>
+              <span id="selectedMeta"></span>
+            </div>
+          </section>
+
+          <details class="clean">
+            <summary>Nhật ký chạy Facebook</summary>
+            <div class="log" id="runLog" style="margin-top:10px">Chưa chạy link Facebook.</div>
+          </details>
+        </div>
+
+        <aside class="side-stack">
+          <section class="card">
+            <div class="sample-head">
+              <div>
+                <h2 class="title">Kho mẫu phòng/căn</h2>
+                <p class="desc">Lưu từng mẫu kèm ảnh và thông tin liên hệ riêng.</p>
+              </div>
+              <button class="btn btn-soft plus-btn" id="toggleListingFormBtn" type="button" title="Thêm mẫu" aria-expanded="false">+</button>
+            </div>
+            <div class="form">
+              <div class="stats">
+                <div class="stat"><strong id="listingTotal">0</strong><span>Tổng mẫu</span></div>
+                <div class="stat"><strong id="addressTotal">0</strong><span>Khu vực</span></div>
+                <div class="stat"><strong id="typeTotal">0</strong><span>Loại phòng</span></div>
+              </div>
+              <textarea id="productNameInput" class="hidden-data" aria-hidden="true" tabindex="-1"></textarea>
+              <textarea id="normalizedPreview" class="hidden-data" aria-hidden="true" tabindex="-1"></textarea>
+
+              <div class="panel hidden" id="listingFormPanel">
+                <div class="form">
+                  <div class="image-picker">
+                    <div class="image-preview" id="imagePreview">Chưa có ảnh</div>
+                    <div class="group">
+                      <label>Ảnh mẫu</label>
+                      <input class="file-input" type="file" id="listingImageInput" accept="image/*">
+                      <div class="minirow">
+                        <button class="btn btn-soft btn-sm" id="chooseImageBtn" type="button">Chọn ảnh</button>
+                        <button class="btn btn-muted btn-sm" id="clearImageBtn" type="button">Bỏ ảnh</button>
+                      </div>
+                      <div class="hint" id="imageStatus">Nên dùng ảnh phòng/căn rõ nét, dung lượng vừa phải.</div>
+                    </div>
+                  </div>
+
+                  <div class="grid2">
+                    <div class="group">
+                      <label for="listingAddressInput">Địa chỉ / khu vực</label>
+                      <input type="text" id="listingAddressInput" placeholder="VD: 111 Quan Hoa, Cầu Giấy">
+                    </div>
+                    <div class="group">
+                      <label for="listingTypeInput">Loại phòng/nhà</label>
+                      <select id="listingTypeInput">
+                        <option value="">Chọn loại</option>
+                        <option>Phòng trọ khép kín</option>
+                        <option>Studio</option>
+                        <option>1K1N</option>
+                        <option>Chung cư mini</option>
+                        <option>Căn hộ</option>
+                        <option>Nhà nguyên căn</option>
+                        <option>Ở ghép</option>
+                        <option>Nhà bán</option>
+                        <option>Mặt bằng</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="grid3">
+                    <div class="group">
+                      <label for="listingPriceInput">Giá</label>
+                      <input type="text" id="listingPriceInput" placeholder="VD: 5tr5 / tháng">
+                    </div>
+                    <div class="group">
+                      <label for="listingAreaInput">Diện tích</label>
+                      <input type="text" id="listingAreaInput" placeholder="VD: 35m2">
+                    </div>
+                    <div class="group">
+                      <label for="listingTermInput">Thời hạn</label>
+                      <input type="text" id="listingTermInput" placeholder="VD: ngắn hạn/lâu dài">
+                    </div>
+                  </div>
+
+                  <div class="grid2">
+                    <div class="group">
+                      <label for="listingFurnitureInput">Nội thất</label>
+                      <input type="text" id="listingFurnitureInput" placeholder="VD: điều hoà, nóng lạnh, giường, tủ">
+                    </div>
+                    <div class="group">
+                      <label for="listingAmenitiesInput">Tiện ích</label>
+                      <input type="text" id="listingAmenitiesInput" placeholder="VD: máy giặt riêng, ban công, ô tô gần nhà">
+                    </div>
+                  </div>
+
+                  <div class="group">
+                    <label for="listingContactInput">Thông tin liên hệ bắt buộc</label>
+                    <textarea id="listingContactInput" placeholder="VD: Zalo/SĐT 0399 922 123, ib trực tiếp Facebook, hoặc rep comment này."></textarea>
+                    <div class="hint">Liên hệ này sẽ đi theo đúng mẫu phòng/căn khi AI chọn mẫu.</div>
+                  </div>
+                  <div class="group">
+                    <label for="listingNoteInput">Ghi chú thêm</label>
+                    <input type="text" id="listingNoteInput" placeholder="VD: hợp 1-2 người, vào ở luôn, yên tĩnh, gần chợ">
+                  </div>
+                  <div class="minirow">
+                    <button class="btn btn-primary btn-sm" id="addListingBtn" type="button">➕ Thêm vào kho</button>
+                    <button class="btn btn-muted btn-sm" id="resetListingFormBtn" type="button">Làm sạch form</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="group">
+                <div class="row">
+                  <label>Danh sách mẫu đã lưu</label>
+                  <button class="btn btn-danger btn-sm" id="clearListingBtn" type="button">Xoá kho</button>
+                </div>
+                <div class="cards" id="listingCards"></div>
+              </div>
+            </div>
+          </section>
+        </aside>
+      </div>
+    </section>
   </main>
+  <div class="toast-host" id="toastHost"></div>
 
-  <div class="toast-host" id="toastHost" aria-live="polite"></div>
-
-  <script>
-    'use strict';
-
-    const APP = {
-      defaultApiUrl: 'https://console.flatkey.ai/v1/chat/completions',
-      defaultModel: 'gpt-5.4-mini',
-      storage: {
-        apiKey: 'truong_ai_commenter_flatkey_api_key_v1',
-        model: 'truong_ai_commenter_model_v1',
-        history: 'truong_ai_commenter_history_v3',
-        draft: 'truong_ai_commenter_draft_v3'
-      }
-    };
-
-    const $ = (selector, root = document) => root.querySelector(selector);
-
-    const els = {
-      apiKeyInput: $('#apiKeyInput'),
-      modelInput: $('#modelInput'),
-      apiStatus: $('#apiStatus'),
-      toggleKeyBtn: $('#toggleKeyBtn'),
-      saveApiBtn: $('#saveApiBtn'),
-      clearApiBtn: $('#clearApiBtn'),
-      articleInput: $('#articleInput'),
-      productNameInput: $('#productNameInput'),
-      productLinkInput: $('#productLinkInput'),
-      toneSelect: $('#toneSelect'),
-      commentModeSelect: $('#commentModeSelect'),
-      generateBtn: $('#generateBtn'),
-      clearBtn: $('#clearBtn'),
-      pasteBtn: $('#pasteBtn'),
-      copyBtn: $('#copyBtn'),
-      saveHistoryBtn: $('#saveHistoryBtn'),
-      output: $('#output'),
-      articleCounter: $('#articleCounter'),
-      productCounter: $('#productCounter'),
-      linkCounter: $('#linkCounter'),
-      linkStatus: $('#linkStatus'),
-      listingTotal: $('#listingTotal'),
-      addressTotal: $('#addressTotal'),
-      typeTotal: $('#typeTotal'),
-      listingCards: $('#listingCards'),
-      normalizedPreview: $('#normalizedPreview'),
-      sampleListingBtn: $('#sampleListingBtn'),
-      normalizeListingBtn: $('#normalizeListingBtn'),
-      copyNormalizedBtn: $('#copyNormalizedBtn'),
-      clearListingBtn: $('#clearListingBtn'),
-      addListingBtn: $('#addListingBtn'),
-      resetListingFormBtn: $('#resetListingFormBtn'),
-      listingAddressInput: $('#listingAddressInput'),
-      listingTypeInput: $('#listingTypeInput'),
-      listingPriceInput: $('#listingPriceInput'),
-      listingAreaInput: $('#listingAreaInput'),
-      listingTermInput: $('#listingTermInput'),
-      listingFurnitureInput: $('#listingFurnitureInput'),
-      listingAmenitiesInput: $('#listingAmenitiesInput'),
-      listingNoteInput: $('#listingNoteInput'),
-      toastHost: $('#toastHost')
-    };
-
-    const SAMPLE_LISTINGS = [
-      'Địa chỉ: 111 Quan Hoa, Cầu Giấy | Loại: Studio/1K1N | Giá: 5tr5 | Diện tích: 35m2 | Nội thất: điều hoà, nóng lạnh, tủ bếp, bếp từ, giường, tủ, sofa bàn trà | Tiện ích: máy giặt riêng, cửa sổ/ban công thoáng, ô tô đỗ gần nhà | Thời hạn: ngắn hạn hoặc lâu dài',
-      'Địa chỉ: Nguyễn Khang, Cầu Giấy | Loại: phòng khép kín | Giá: 3tr2 | Diện tích: 25m2 | Nội thất: điều hoà, nóng lạnh, giường, tủ | Tiện ích: để xe tầng 1, giờ giấc tự do | Ghi chú: hợp 1-2 người',
-      'Địa chỉ: Ba Hàng, Phổ Yên | Loại: nhà nguyên căn | Giá: 5tr/tháng | Diện tích: 70m2 | Nội thất: cơ bản | Tiện ích: gần chợ, ô tô gần nhà, khu yên tĩnh | Ghi chú: vào ở lâu dài'
-    ];
-
-    function safeJsonParse(value, fallback) {
-      try { return JSON.parse(value) ?? fallback; }
-      catch { return fallback; }
-    }
-
-    function loadStorage(key, fallback) {
-      return safeJsonParse(localStorage.getItem(key), fallback);
-    }
-
-    function saveStorage(key, value) {
-      localStorage.setItem(key, JSON.stringify(value));
-    }
-
-    function removeStorage(key) {
-      localStorage.removeItem(key);
-    }
-
-    function toast(message, type = 'success') {
-      const item = document.createElement('div');
-      item.className = `toast ${type}`;
-      item.textContent = message;
-      els.toastHost.appendChild(item);
-      setTimeout(() => item.remove(), 3300);
-    }
-
-    function setOutput(message, className = '') {
-      els.output.textContent = message;
-      els.output.className = className;
-    }
-
-    function cleanApiKey(value) {
-      return String(value || '').trim().replace(/^Bearer\s+/i, '');
-    }
-
-    function getErrorText(error) {
-      if (!error) return '';
-      if (typeof error === 'string') return error;
-      if (error.message) return error.message;
-      try { return JSON.stringify(error); } catch { return String(error); }
-    }
-
-    function stripAiWrapper(text) {
-      return String(text || '')
-        .replace(/^```(?:text|md|markdown)?/i, '')
-        .replace(/```$/i, '')
-        .replace(/^\s*["“”']|["“”']\s*$/g, '')
-        .trim();
-    }
-
-    function extractResponseText(data) {
-      if (typeof data === 'string') return data;
-      const messageContent = data?.choices?.[0]?.message?.content;
-      if (typeof messageContent === 'string') return messageContent;
-      if (Array.isArray(messageContent)) {
-        return messageContent.map(part => part?.text || part?.content || '').join('').trim();
-      }
-      return data?.content || data?.text || data?.message?.content || '';
-    }
-
-    async function readErrorBody(response) {
-      const contentType = response.headers.get('content-type') || '';
-      try {
-        if (contentType.includes('application/json')) {
-          const json = await response.json();
-          return json?.error?.message || json?.message || JSON.stringify(json);
-        }
-        return await response.text();
-      } catch {
-        return `${response.status} ${response.statusText}`;
-      }
-    }
-
-    async function callChatCompletions({ apiUrl, apiKey, model, prompt }) {
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model,
-          messages: [{ role: 'user', content: prompt }]
-        })
-      });
-
-      if (!response.ok) {
-        const errBody = await readErrorBody(response);
-        throw new Error(`${response.status} ${response.statusText}: ${errBody}`);
-      }
-
-      const data = await response.json();
-      return extractResponseText(data);
-    }
-
-    function normalizeText(value) {
-      return String(value || '').replace(/\s+/g, ' ').trim();
-    }
-
-    function normalizeContactInfo(raw) {
-      return String(raw || '')
-        .split(/\n+/)
-        .map(line => line.trim())
-        .filter(Boolean)
-        .join(' | ')
-        .trim();
-    }
-
-    function getListingLines(raw) {
-      return String(raw || '')
-        .split(/\n+/)
-        .map(line => line.trim())
-        .filter(Boolean);
-    }
-
-    function removeVietnameseMarks(str) {
-      return String(str || '')
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/đ/g, 'd')
-        .replace(/Đ/g, 'D')
-        .toLowerCase()
-        .trim();
-    }
-
-    function fieldNameToKey(name) {
-      const key = removeVietnameseMarks(name).replace(/[^a-z0-9]+/g, ' ').trim();
-      if (/^(dia chi|vi tri|khu vuc|address|location)$/.test(key)) return 'address';
-      if (/^(loai|loai phong|loai nha|type|kieu phong|kieu can)$/.test(key)) return 'type';
-      if (/^(gia|gia thue|gia ban|price|ngan sach)$/.test(key)) return 'price';
-      if (/^(dien tich|dt|area)$/.test(key)) return 'area';
-      if (/^(phong ngu|pn|so phong ngu|bedroom|bedrooms)$/.test(key)) return 'bedrooms';
-      if (/^(noi that|do dac|furniture)$/.test(key)) return 'furniture';
-      if (/^(tien ich|utility|utilities|uu diem|diem manh)$/.test(key)) return 'amenities';
-      if (/^(thoi han|thue|hop dong|term|duration)$/.test(key)) return 'term';
-      if (/^(ghi chu|note|mo ta|description|khac)$/.test(key)) return 'note';
-      return '';
-    }
-
-    function parseListingLine(line, index = 0) {
-      const listing = {
-        id: `can_${Date.now()}_${index}_${Math.random().toString(16).slice(2)}`,
-        address: '',
-        type: '',
-        price: '',
-        area: '',
-        bedrooms: '',
-        furniture: '',
-        amenities: '',
-        term: '',
-        note: '',
-        raw: line
-      };
-
-      const parts = String(line || '')
-        .split('|')
-        .map(part => part.trim())
-        .filter(Boolean);
-
-      const unlabeled = [];
-      parts.forEach(part => {
-        const match = part.match(/^([^:=：]{1,24})\s*[:=：]\s*(.+)$/);
-        if (match) {
-          const key = fieldNameToKey(match[1]);
-          const value = normalizeText(match[2]);
-          if (key && value) {
-            listing[key] = listing[key] ? `${listing[key]}, ${value}` : value;
-            return;
-          }
-        }
-        unlabeled.push(normalizeText(part));
-      });
-
-      const order = ['address', 'type', 'price', 'area', 'furniture', 'amenities', 'note'];
-      unlabeled.forEach((value, i) => {
-        const key = order[i] || 'note';
-        if (!value) return;
-        listing[key] = listing[key] ? `${listing[key]}, ${value}` : value;
-      });
-
-      if (!listing.address && listing.raw) {
-        const guessAddress = listing.raw.split(/[|,;-]/)[0]?.trim();
-        if (guessAddress && guessAddress.length <= 80) listing.address = guessAddress;
-      }
-
-      return listing;
-    }
-
-    function parseAllListings() {
-      return getListingLines(els.productNameInput.value).map(parseListingLine);
-    }
-
-    function listingToLine(data) {
-      const fields = [
-        ['Địa chỉ', data.address],
-        ['Loại', data.type],
-        ['Giá', data.price],
-        ['Diện tích', data.area],
-        ['Phòng ngủ', data.bedrooms],
-        ['Nội thất', data.furniture],
-        ['Tiện ích', data.amenities],
-        ['Thời hạn', data.term],
-        ['Ghi chú', data.note]
-      ];
-      return fields
-        .filter(([, value]) => normalizeText(value))
-        .map(([label, value]) => `${label}: ${normalizeText(value)}`)
-        .join(' | ');
-    }
-
-    function listingToStructuredText(listing, index) {
-      const lines = [`[CĂN/PHÒNG ${index + 1}]`];
-      if (listing.address) lines.push(`Địa chỉ/khu vực: ${listing.address}`);
-      if (listing.type) lines.push(`Loại: ${listing.type}`);
-      if (listing.price) lines.push(`Giá: ${listing.price}`);
-      if (listing.area) lines.push(`Diện tích: ${listing.area}`);
-      if (listing.bedrooms) lines.push(`Phòng ngủ: ${listing.bedrooms}`);
-      if (listing.furniture) lines.push(`Nội thất: ${listing.furniture}`);
-      if (listing.amenities) lines.push(`Tiện ích: ${listing.amenities}`);
-      if (listing.term) lines.push(`Thời hạn: ${listing.term}`);
-      if (listing.note) lines.push(`Ghi chú: ${listing.note}`);
-      if (!lines.slice(1).length && listing.raw) lines.push(`Thông tin gốc: ${listing.raw}`);
-      return lines.join('\n');
-    }
-
-    function getStructuredListings() {
-      const listings = parseAllListings();
-      return listings.map(listingToStructuredText).join('\n\n').trim();
-    }
-
-    function uniqueCount(listings, key) {
-      const set = new Set(
-        listings
-          .map(item => removeVietnameseMarks(item[key] || ''))
-          .map(value => value.replace(/\s+/g, ' ').trim())
-          .filter(Boolean)
-      );
-      return set.size;
-    }
-
-    function renderListingCards() {
-      const listings = parseAllListings();
-      els.listingCards.innerHTML = '';
-
-      if (!listings.length) {
-        els.listingCards.innerHTML = '<div class="empty-box">Chưa có căn/phòng nào. Hãy thêm căn/phòng bằng form bên trên.</div>';
-        return;
-      }
-
-      listings.forEach((listing, index) => {
-        const card = document.createElement('div');
-        card.className = 'listing-card';
-        card.title = listingToStructuredText(listing, index);
-
-        const address = listing.address || `Căn/phòng ${index + 1}`;
-        const type = listing.type || 'Chưa rõ loại';
-
-        card.innerHTML = `
-          <div class="listing-index">${escapeHtml(index + 1)}</div>
-          <div class="listing-main">
-            <div class="listing-address">📍 ${escapeHtml(address)}</div>
-            <div class="listing-type">🏠 ${escapeHtml(type)}</div>
-          </div>
-          <div class="listing-actions">
-            <button class="btn btn-muted btn-sm" type="button" data-edit-index="${index}">Sửa</button>
-            <button class="btn btn-danger btn-sm" type="button" data-delete-index="${index}">Xoá</button>
-          </div>
-        `;
-        els.listingCards.appendChild(card);
-      });
-    }
-
-    function escapeHtml(value) {
-      return String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
-
-    function updateCounters() {
-      const listings = parseAllListings();
-      const structured = listings.map(listingToStructuredText).join('\n\n').trim();
-      const contactInfo = normalizeContactInfo(els.productLinkInput.value);
-
-      els.articleCounter.textContent = `${els.articleInput.value.length}/6000`;
-      els.productCounter.textContent = `${els.productNameInput.value.length}/12000 • ${listings.length} căn/phòng`;
-      els.linkCounter.textContent = `${contactInfo.length} ký tự`;
-      els.listingTotal.textContent = String(listings.length);
-      els.addressTotal.textContent = String(uniqueCount(listings, 'address'));
-      els.typeTotal.textContent = String(uniqueCount(listings, 'type'));
-      els.normalizedPreview.value = structured;
-
-      if (!contactInfo) {
-        els.linkStatus.textContent = 'Bắt buộc nhập thông tin liên hệ';
-        els.linkStatus.className = 'hint';
-      } else if (/\b(?:zalo|sđt|sdt|điện thoại|dien thoai|phone|ib|inbox|facebook|fb|rep|comment|bình luận|binh luan)\b/i.test(contactInfo) || /(?:\+?84|0)\d{8,10}\b/.test(contactInfo)) {
-        els.linkStatus.textContent = '✅ Thông tin liên hệ sẵn sàng';
-        els.linkStatus.className = 'hint';
-      } else {
-        els.linkStatus.textContent = 'Sẽ dùng như ghi chú liên hệ';
-        els.linkStatus.className = 'hint';
-      }
-
-      renderListingCards();
-    }
-
-    function updateApiStatus() {
-      const apiKey = cleanApiKey(els.apiKeyInput.value);
-      if (!apiKey) {
-        els.apiStatus.textContent = 'Chưa nhập API key';
-        els.apiStatus.className = 'status-line warn';
-        return;
-      }
-
-      const masked = apiKey.length > 10 ? `${apiKey.slice(0, 6)}...${apiKey.slice(-4)}` : 'Đã nhập API key';
-      els.apiStatus.textContent = `✅ API key sẵn sàng: ${masked}`;
-      els.apiStatus.className = 'status-line ok';
-    }
-
-    function buildClassificationPrompt({ article }) {
-      return `Bạn là bộ lọc bài viết Facebook cho công cụ auto comment phòng trọ/nhà ở.
-
-Nhiệm vụ: Dựa DUY NHẤT vào nội dung bài viết gốc, phân loại xem có nên trả lời hay bỏ qua.
-
-Nội dung bài viết gốc:
-"${article}"
-
-Quy tắc phân loại:
-1. Trả về "next" nếu người đăng là người CHO THUÊ, người BÁN, chủ phòng, môi giới đang đăng tin có phòng/căn/nhà, đăng giá thuê, đăng thông tin còn phòng, nhận khách, cho thuê, sang nhượng, bán nhà, bán căn hộ, quảng cáo phòng/nhà.
-2. Trả về "reply" nếu người đăng là khách đang CẦN THUÊ, CẦN MUA, TÌM PHÒNG, TÌM NHÀ, tìm trọ, tìm căn hộ, hỏi ai biết phòng, cần ở ghép, cần thuê gần khu vực nào đó, cần mua nhà/căn nào đó.
-3. Trả về "next" nếu bài không rõ nhu cầu, bài spam, bài tuyển môi giới, bài hỏi ngoài chủ đề, hoặc không chắc chắn.
-4. Không dùng thông tin phòng/nhà đang có để phân loại. Chỉ nhìn nội dung bài gốc.
-
-Chỉ được trả về đúng 1 từ viết thường: next hoặc reply.
-Không giải thích, không thêm dấu câu, không xuống dòng.`;
-    }
-
-    function parseArticleClassification(raw) {
-      const value = String(raw || '')
-        .toLowerCase()
-        .replace(/[`"'“”‘’.,:;!?()\[\]{}]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-      if (!value) return 'next';
-      if (/\bnext\b/.test(value)) return 'next';
-      if (/\breply\b/.test(value)) return 'reply';
-      return 'next';
-    }
-
-    function buildPrompt({ article, extraInfo, contactInfo, selectedTone, commentMode }) {
-      const contactInstruction = `- Thông tin liên hệ bắt buộc phải dùng tự nhiên: ${contactInfo}`;
-
-      const modeInstruction = {
-        auto: 'Tự nhận diện khách đang cần THUÊ hay cần MUA. Sau đó đọc toàn bộ kho căn/phòng, so khớp vị trí trước tiên rồi mới so khớp ngân sách, loại nhà/phòng, tiện ích.',
-        rent: 'Khách đang cần thuê phòng/nhà. Trả lời như chủ phòng/người có phòng, nhưng phải chọn đúng căn/phòng theo vị trí gần nhất với bài gốc trước; nếu không trùng khu vực thì chỉ gợi ý tham khảo.',
-        buy: 'Khách đang cần mua nhà/phòng/căn hộ. Trả lời như người bán/tư vấn nhà ở, nhưng phải chọn đúng căn theo vị trí/ngân sách/loại nhà; nếu không trùng khu vực thì chỉ mời tham khảo.',
-        ask_more: 'Tập trung hỏi thêm thông tin còn thiếu như khu vực, ngân sách, số người ở, thời gian vào ở, yêu cầu nội thất, chỗ để xe hoặc giấy tờ mua bán. Nếu có căn/phòng gần tiêu chí thì chỉ gợi ý để khách tham khảo.'
-      }[commentMode] || 'Tự nhận diện nhu cầu khách, chọn căn/phòng phù hợp nhất theo vị trí và viết như người bán/chủ phòng đang tư vấn.';
-
-      return `Bạn là nhân viên tư vấn bất động sản/phòng trọ chuyên nghiệp, nói chuyện tự nhiên như người thật trong nhóm Facebook.
-
-Nhiệm vụ: Dựa sát vào nội dung bài viết gốc của khách đang cần thuê hoặc mua phòng trọ, nhà trọ, căn hộ, nhà ở, hãy viết duy nhất 1 bình luận trả lời phù hợp, lịch sự, tự nhiên và có khả năng khiến khách muốn nhắn tin lại.
-
-Thông tin đầu vào:
-- Bài viết gốc của khách: "${article}"
-- Kho phòng/nhà đang có. Mỗi mục [CĂN/PHÒNG] là một căn/phòng độc lập, tuyệt đối không trộn thông tin giữa các mục:
-${extraInfo}
-${contactInstruction}
-- Phong cách bình luận: ${selectedTone}
-- Logic trả lời: ${modeInstruction}
-
-Cách phân tích bắt buộc trước khi viết:
-1. Trích nhu cầu chính từ bài gốc: khách cần thuê hay mua, khu vực/địa chỉ mong muốn, ngân sách, loại phòng/nhà, số người ở, thời gian vào ở, yêu cầu nội thất/tiện ích/giấy tờ nếu có.
-2. Đọc TOÀN BỘ kho phòng/nhà đang có. Mỗi mục [CĂN/PHÒNG] là một căn/phòng độc lập, không được bỏ qua mục nào khi phân tích.
-3. Chọn 1 căn/phòng phù hợp nhất theo thứ tự ưu tiên:
-   - Ưu tiên 1: vị trí/khu vực/địa chỉ trùng hoặc gần nhất với bài gốc.
-   - Ưu tiên 2: đúng loại nhu cầu: phòng trọ, studio, 1K1N, nhà nguyên căn, căn hộ, ở ghép, nhà mua/bán.
-   - Ưu tiên 3: ngân sách/giá gần với bài gốc.
-   - Ưu tiên 4: tiện ích, số người ở, nội thất, chỗ để xe, giờ giấc, giấy tờ.
-4. Chỉ dùng thông tin của căn/phòng đã chọn để viết bình luận. Không được trộn giá, vị trí, diện tích, nội thất, tiện ích của nhiều căn/phòng khác nhau.
-5. Nếu có nhiều căn/phòng đều phù hợp, chọn căn khớp vị trí tốt nhất. Có thể nhắc rất nhẹ là "bên mình còn vài căn khác" nhưng bình luận chính chỉ tập trung vào 1 căn phù hợp nhất.
-6. Nếu không có căn/phòng nào trùng địa chỉ/khu vực khách tìm, bắt buộc chuyển sang tư vấn tham khảo, ví dụ: "nếu bạn có thể mở rộng qua khu... thì mình có căn/phòng để tham khảo". Không được nói "phù hợp" hoặc "đúng khu bạn tìm".
-7. Nếu bài gốc không ghi rõ vị trí, hãy chọn căn/phòng có thông tin rõ ràng nhất trong kho, đồng thời hỏi thêm khu vực khách muốn tìm.
-8. Nếu ngân sách của khách thấp hơn giá căn/phòng đã chọn, không nói phù hợp hoàn toàn; hãy nói mềm như "bên mình có căn/phòng khoảng... nếu bạn cân nhắc thêm".
-
-Quy tắc viết bình luận:
-1. Bám sát bài gốc, nhắc lại nhẹ 1 chi tiết thật của khách như khu vực, ngân sách, loại phòng/nhà hoặc số người ở nếu có.
-2. Bắt buộc dùng thông tin của 1 căn/phòng được chọn từ kho, nhưng chỉ dùng đúng thông tin đã nhập, không tự bịa thêm.
-3. Bắt buộc có thông tin liên hệ từ phần đã nhập; có thể dùng SĐT/Zalo, inbox Facebook hoặc rep comment theo đúng dữ liệu.
-4. Nếu căn/phòng trùng nhu cầu: tư vấn trực tiếp và mời khách nhắn để gửi ảnh, vị trí, giá chi tiết.
-5. Nếu căn/phòng không trùng địa chỉ/khu vực: tư vấn mềm theo hướng tham khảo, không ép khách, không nói "đúng khu bạn tìm".
-6. Nếu bài viết thiếu thông tin: hỏi thêm 1 câu ngắn, đồng thời gợi ý căn/phòng đang có nếu liên quan.
-7. Không dùng link nếu người dùng không nhập link.
-8. Không viết kiểu quảng cáo lộ liễu, không spam, không hashtag, không markdown.
-9. Không dùng từ quá đà như "siêu phẩm", "rẻ nhất thị trường", "cam kết 100%", "hot nhất".
-10. Độ dài 2-4 câu ngắn, tự nhiên, chuyên nghiệp, giống người bán/chủ phòng/môi giới thật.
-11. Thông tin liên hệ chỉ chèn 1 lần, tự nhiên, không nhồi nhét.
-12. Không dùng quá 1 emoji. Câu cuối không có dấu chấm.
-
-Chỉ trả về nội dung bình luận cuối cùng, không thêm tiêu đề, không giải thích.`;
-    }
-
-    async function generateComment() {
-      const apiKey = cleanApiKey(els.apiKeyInput.value);
-      const apiUrl = APP.defaultApiUrl;
-      const model = els.modelInput.value.trim() || APP.defaultModel;
-      const article = els.articleInput.value.trim();
-      const extraInfo = getStructuredListings();
-      const selectedTone = els.toneSelect.value;
-      const commentMode = els.commentModeSelect.value;
-      const contactInfo = normalizeContactInfo(els.productLinkInput.value);
-
-      if (!apiKey) {
-        toast('Vui lòng nhập API key.', 'warning');
-        els.apiKeyInput.focus();
-        return;
-      }
-
-      if (!article) {
-        toast('Vui lòng dán nội dung bài viết khách cần thuê/mua.', 'warning');
-        els.articleInput.focus();
-        return;
-      }
-
-      els.generateBtn.disabled = true;
-      els.generateBtn.textContent = '⏳ Đang lọc bài...';
-      setOutput('Đang gửi nội dung bài viết cho AI phân tích trước...', 'loading');
-
-      try {
-        saveApiConfig({ silent: true });
-        saveDraft();
-
-        const classificationPrompt = buildClassificationPrompt({ article });
-        const classificationRaw = stripAiWrapper(await callChatCompletions({ apiUrl, apiKey, model, prompt: classificationPrompt }));
-        const classification = parseArticleClassification(classificationRaw);
-
-        if (classification === 'next') {
-          setOutput('next', '');
-          const copied = await copyText('next', { silent: true });
-          if (copied) {
-            const oldCopyText = els.copyBtn.textContent;
-            els.copyBtn.textContent = '✔️ Đã tự copy next';
-            setTimeout(() => { els.copyBtn.textContent = oldCopyText; }, 2500);
-          }
-          toast('Bài này là người cho thuê/bán hoặc không phải khách đang tìm. Đã trả về next.', 'warning');
-          return;
-        }
-
-        if (!extraInfo) {
-          toast('Vui lòng thêm ít nhất 1 căn/phòng vào kho trước khi tạo comment.', 'warning');
-          els.listingAddressInput.focus();
-          setOutput('⚠️ Bài này là khách đang tìm thuê/mua, nhưng kho phòng/nhà đang trống. Hãy thêm ít nhất 1 căn/phòng bằng form rồi tạo lại.', 'error');
-          return;
-        }
-
-        if (!contactInfo) {
-          toast('Vui lòng nhập thông tin liên hệ trước khi tạo comment.', 'warning');
-          els.productLinkInput.focus();
-          setOutput('⚠️ Bài này là khách đang tìm thuê/mua, nhưng đang thiếu thông tin liên hệ. Hãy nhập SĐT/Zalo, ib Facebook hoặc rep comment này rồi tạo lại.', 'error');
-          return;
-        }
-
-        els.generateBtn.textContent = '⏳ Đang tạo comment...';
-        setOutput('Bài viết là khách đang cần thuê/mua. Đang so khớp kho căn/phòng theo vị trí và tạo bình luận tư vấn...', 'loading');
-
-        const prompt = buildPrompt({ article, extraInfo, contactInfo, selectedTone, commentMode });
-        const result = stripAiWrapper(await callChatCompletions({ apiUrl, apiKey, model, prompt }));
-
-        setOutput(result || 'Không có phản hồi từ API.', result ? '' : 'error');
-
-        if (result) {
-          const copied = await copyText(els.output.textContent, { silent: true });
-          const oldCopyText = els.copyBtn.textContent;
-          if (copied) {
-            els.copyBtn.textContent = '✔️ Đã tự copy';
-            toast('Đã tạo xong và tự động copy kết quả');
-            setTimeout(() => { els.copyBtn.textContent = oldCopyText; }, 2500);
-          } else {
-            els.copyBtn.textContent = 'Copy thủ công';
-            toast('Trình duyệt chặn tự động copy. Bấm nút Sao chép để copy thủ công.', 'warning');
-            setTimeout(() => { els.copyBtn.textContent = oldCopyText; }, 3000);
-          }
-        }
-      } catch (error) {
-        setOutput('❌ Lỗi API: ' + getErrorText(error), 'error');
-      } finally {
-        els.generateBtn.disabled = false;
-        els.generateBtn.textContent = '✨ Tạo bình luận';
-      }
-    }
-
-    async function copyText(text, options = {}) {
-      const value = String(text || '').trim();
-      if (!value) return false;
-
-      try {
-        await navigator.clipboard.writeText(value);
-        if (!options.silent) toast('Đã sao chép vào clipboard');
-        return true;
-      } catch {
-        const ta = document.createElement('textarea');
-        ta.value = value;
-        ta.style.position = 'fixed';
-        ta.style.opacity = '0';
-        document.body.appendChild(ta);
-        ta.select();
-        let ok = false;
-        try { ok = document.execCommand('copy'); } catch { ok = false; }
-        ta.remove();
-        if (!options.silent) toast(ok ? 'Đã sao chép vào clipboard' : 'Trình duyệt chặn sao chép tự động.', ok ? 'success' : 'warning');
-        return ok;
-      }
-    }
-
-    function fillSampleListings() {
-      const current = els.productNameInput.value.trim();
-      els.productNameInput.value = current ? `${current}\n${SAMPLE_LISTINGS.join('\n')}` : SAMPLE_LISTINGS.join('\n');
-      updateCounters();
-      saveDraft();
-      toast('Đã thêm mẫu nhập nhanh');
-    }
-
-    function normalizeListingInput() {
-      const listings = parseAllListings();
-      els.productNameInput.value = listings.map(listingToLine).filter(Boolean).join('\n');
-      updateCounters();
-      saveDraft();
-      toast(`Đã chuẩn hoá ${listings.length} căn/phòng`);
-    }
-
-    function clearListings() {
-      els.productNameInput.value = '';
-      updateCounters();
-      saveDraft();
-      toast('Đã xoá kho phòng/nhà', 'warning');
-    }
-
-    function getListingFormData() {
-      return {
-        address: els.listingAddressInput.value,
-        type: els.listingTypeInput.value,
-        price: els.listingPriceInput.value,
-        area: els.listingAreaInput.value,
-        bedrooms: '',
-        furniture: els.listingFurnitureInput.value,
-        amenities: els.listingAmenitiesInput.value,
-        term: els.listingTermInput.value,
-        note: els.listingNoteInput.value
-      };
-    }
-
-    function resetListingForm() {
-      els.listingAddressInput.value = '';
-      els.listingTypeInput.value = '';
-      els.listingPriceInput.value = '';
-      els.listingAreaInput.value = '';
-      els.listingTermInput.value = '';
-      els.listingFurnitureInput.value = '';
-      els.listingAmenitiesInput.value = '';
-      els.listingNoteInput.value = '';
-    }
-
-    function addListingFromForm() {
-      const data = getListingFormData();
-      const line = listingToLine(data);
-      if (!line) {
-        toast('Hãy nhập ít nhất địa chỉ/khu vực hoặc loại phòng trước.', 'warning');
-        els.listingAddressInput.focus();
-        return;
-      }
-
-      const current = els.productNameInput.value.trim();
-      els.productNameInput.value = current ? `${current}\n${line}` : line;
-      resetListingForm();
-      updateCounters();
-      saveDraft();
-      toast('Đã thêm căn/phòng vào kho');
-    }
-
-    function editListing(index) {
-      const listings = parseAllListings();
-      const listing = listings[index];
-      if (!listing) return;
-
-      els.listingAddressInput.value = listing.address;
-      els.listingTypeInput.value = listing.type;
-      els.listingPriceInput.value = listing.price;
-      els.listingAreaInput.value = listing.area;
-      els.listingTermInput.value = listing.term;
-      els.listingFurnitureInput.value = listing.furniture;
-      els.listingAmenitiesInput.value = listing.amenities;
-      els.listingNoteInput.value = listing.note;
-
-      listings.splice(index, 1);
-      els.productNameInput.value = listings.map(listingToLine).filter(Boolean).join('\n');
-      updateCounters();
-      saveDraft();
-      toast('Đã đưa căn/phòng lên form để sửa');
-    }
-
-    function deleteListing(index) {
-      const listings = parseAllListings();
-      listings.splice(index, 1);
-      els.productNameInput.value = listings.map(listingToLine).filter(Boolean).join('\n');
-      updateCounters();
-      saveDraft();
-      toast('Đã xoá căn/phòng khỏi kho', 'warning');
-    }
-
-    function clearForm() {
-      els.articleInput.value = '';
-      els.productNameInput.value = '';
-      els.productLinkInput.value = '';
-      els.toneSelect.selectedIndex = 0;
-      els.commentModeSelect.selectedIndex = 0;
-      resetListingForm();
-      setOutput('Bình luận tư vấn sẽ xuất hiện tại đây...', 'placeholder');
-      saveDraft();
-      updateCounters();
-      toast('Đã làm mới form');
-    }
-
-    async function pasteArticle() {
-      try {
-        const text = await navigator.clipboard.readText();
-        els.articleInput.value = text;
-        saveDraft();
-        updateCounters();
-        toast('Đã dán nội dung');
-      } catch {
-        toast('Trình duyệt chặn clipboard. Hãy dán thủ công bằng Ctrl+V.', 'warning');
-      }
-    }
-
-    function saveHistory() {
-      const comment = els.output.textContent.trim();
-      if (!comment || els.output.classList.contains('placeholder') || els.output.classList.contains('loading')) {
-        toast('Chưa có bình luận hợp lệ để lưu.', 'warning');
-        return;
-      }
-
-      const history = loadStorage(APP.storage.history, []);
-      history.unshift({
-        comment,
-        listings: getStructuredListings(),
-        contactInfo: normalizeContactInfo(els.productLinkInput.value),
-        createdAt: new Date().toISOString()
-      });
-      saveStorage(APP.storage.history, history.slice(0, 50));
-      toast('Đã lưu bình luận vào lịch sử');
-    }
-
-    function saveDraft() {
-      saveStorage(APP.storage.draft, {
-        article: els.articleInput.value,
-        productName: els.productNameInput.value,
-        contactInfo: els.productLinkInput.value,
-        tone: els.toneSelect.value,
-        commentMode: els.commentModeSelect.value
-      });
-    }
-
-    function restoreDraft() {
-      const draft = loadStorage(APP.storage.draft, null) || loadStorage('truong_ai_commenter_draft_v2', null);
-      if (!draft) return;
-
-      els.articleInput.value = draft.article || '';
-      els.productNameInput.value = draft.productName || '';
-      els.productLinkInput.value = draft.contactInfo || draft.productLinks || '';
-      if (draft.tone) els.toneSelect.value = draft.tone;
-      if (draft.commentMode) els.commentModeSelect.value = draft.commentMode;
-    }
-
-    function saveApiConfig(options = {}) {
-      const apiKey = cleanApiKey(els.apiKeyInput.value);
-      const model = els.modelInput.value.trim() || APP.defaultModel;
-      if (apiKey) saveStorage(APP.storage.apiKey, apiKey);
-      saveStorage(APP.storage.model, model);
-      els.apiKeyInput.value = apiKey;
-      els.modelInput.value = model;
-      updateApiStatus();
-      if (!options.silent) toast('Đã lưu cấu hình API');
-    }
-
-    function restoreApiConfig() {
-      els.apiKeyInput.value = loadStorage(APP.storage.apiKey, '');
-      els.modelInput.value = loadStorage(APP.storage.model, APP.defaultModel);
-      updateApiStatus();
-    }
-
-    function clearApiConfig() {
-      removeStorage(APP.storage.apiKey);
-      els.apiKeyInput.value = '';
-      updateApiStatus();
-      toast('Đã xoá API key');
-    }
-
-    function toggleApiKeyVisible() {
-      const isPassword = els.apiKeyInput.type === 'password';
-      els.apiKeyInput.type = isPassword ? 'text' : 'password';
-      els.toggleKeyBtn.textContent = isPassword ? '🙈 Ẩn key' : '👁️ Hiện key';
-    }
-
-    function wireEvents() {
-      els.generateBtn.addEventListener('click', generateComment);
-      els.clearBtn.addEventListener('click', clearForm);
-      els.pasteBtn.addEventListener('click', pasteArticle);
-      els.copyBtn.addEventListener('click', () => copyText(els.output.textContent));
-      els.saveHistoryBtn.addEventListener('click', saveHistory);
-      els.saveApiBtn.addEventListener('click', () => saveApiConfig());
-      els.clearApiBtn.addEventListener('click', clearApiConfig);
-      els.toggleKeyBtn.addEventListener('click', toggleApiKeyVisible);
-
-      els.sampleListingBtn?.addEventListener('click', fillSampleListings);
-      els.normalizeListingBtn?.addEventListener('click', normalizeListingInput);
-      els.copyNormalizedBtn?.addEventListener('click', () => copyText(els.normalizedPreview.value));
-      els.clearListingBtn?.addEventListener('click', clearListings);
-      els.addListingBtn.addEventListener('click', addListingFromForm);
-      els.resetListingFormBtn.addEventListener('click', resetListingForm);
-
-      els.listingCards.addEventListener('click', event => {
-        const editBtn = event.target.closest('[data-edit-index]');
-        const deleteBtn = event.target.closest('[data-delete-index]');
-        if (editBtn) editListing(Number(editBtn.dataset.editIndex));
-        if (deleteBtn) deleteListing(Number(deleteBtn.dataset.deleteIndex));
-      });
-
-      [els.articleInput, els.productNameInput, els.productLinkInput, els.toneSelect, els.commentModeSelect].forEach(input => {
-        input.addEventListener('input', () => {
-          updateCounters();
-          saveDraft();
-        });
-        input.addEventListener('change', saveDraft);
-      });
-
-      [els.apiKeyInput, els.modelInput].forEach(input => {
-        input.addEventListener('input', updateApiStatus);
-        input.addEventListener('change', () => saveApiConfig({ silent: true }));
-      });
-
-      document.addEventListener('keydown', event => {
-        if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-          event.preventDefault();
-          generateComment();
-        }
-      });
-    }
-
-    function init() {
-      restoreApiConfig();
-      restoreDraft();
-      wireEvents();
-      updateCounters();
-    }
-
-    window.addEventListener('DOMContentLoaded', init);
-  </script>
+  <script src="app.js"></script>
 </body>
 </html>
