@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Auto Comment Phòng Trọ / Nhà Ở + Ảnh mẫu — GitHub Web</title>
+  <title>Auto Comment Phòng Trọ / Nhà Ở + Ảnh mẫu</title>
   <style>
     :root{
       --bg:#f4f6fb;
@@ -161,7 +161,6 @@
     #facebookUrlsInput{min-height:138px}
     #articleInput{min-height:160px}
     #productLinkInput{min-height:72px}
-    #commentedLinksInput{min-height:92px}
     #listingContactInput{min-height:82px}
     .hidden{display:none!important}
     .hidden-data{position:absolute!important;left:-99999px!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important}
@@ -280,6 +279,8 @@
     .toast.success{border-left-color:var(--green)}
     .toast.warning{border-left-color:#f59e0b}
     .toast.error{border-left-color:var(--red)}
+    .scanned-links-card{margin-top:18px}
+    #scannedLinksInput{min-height:210px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;line-height:1.55}
 
     @media(max-width:1080px){
       .workspace{grid-template-columns:1fr}
@@ -310,10 +311,10 @@
         <div class="logo">🏠</div>
         <div>
           <h1>Auto Comment Phòng Trọ / Nhà Ở</h1>
-          <p>Quét link nhóm → đọc bài viết → AI lọc next/reply → comment kèm ảnh mẫu phù hợp.</p>
+          <p>Web GitHub Pages kết nối Chrome Extension để quét nhóm, đọc bài, tạo bình luận và đăng ảnh.</p>
         </div>
       </div>
-      <span class="badge" id="extensionBadge">🧩 Đang kiểm tra extension</span>
+      <span class="badge" id="extensionBadge">🧩 Đang kết nối Extension...</span>
     </header>
 
     <section class="flow">
@@ -461,18 +462,11 @@
                 <label for="facebookUrlsInput">Link bài viết Facebook</label>
                 <textarea id="facebookUrlsInput" placeholder="Link bài viết sau khi quét sẽ tự xuất hiện ở đây..."></textarea>
                 <div class="row">
-                  <span class="hint">Tự lọc trùng với link đã chạy/comment.</span>
+                  <span class="hint">Tự lọc trùng với danh sách link đã quét ở nhóm.</span>
                   <span class="counter" id="urlCounter">0 link</span>
                 </div>
                 <button class="btn btn-primary existing-links-btn" id="runExistingLinksBtn" type="button">▶ Chạy link hiện có</button>
               </div>
-              <details class="clean">
-                <summary>Link đã chạy/comment xong</summary>
-                <div class="form" style="margin-top:10px">
-                  <textarea id="commentedLinksInput" readonly></textarea>
-                  <button class="btn btn-danger btn-sm" id="clearCommentedLinksBtn" type="button">Xoá danh sách đã chạy</button>
-                </div>
-              </details>
             </div>
           </section>
 
@@ -518,10 +512,6 @@
             </div>
           </section>
 
-          <details class="clean">
-            <summary>Nhật ký chạy Facebook</summary>
-            <div class="log" id="runLog" style="margin-top:10px">Chưa chạy link Facebook.</div>
-          </details>
         </div>
 
         <aside class="side-stack">
@@ -632,6 +622,29 @@
           </section>
         </aside>
       </div>
+
+      <section class="card scanned-links-card">
+        <div class="card-head">
+          <div>
+            <h2 class="title">Link đã quét ở nhóm</h2>
+            <p class="desc">Lưu tất cả link đã đọc được nội dung bài viết. Những link này sẽ tự bị loại ở các lần quét nhóm tiếp theo.</p>
+          </div>
+          <span class="step">✓</span>
+        </div>
+        <div class="form">
+          <div class="group">
+            <div class="row">
+              <label for="scannedLinksInput">Danh sách link đã xử lý đọc văn bản</label>
+              <span class="counter" id="scannedLinksCounter">0 link</span>
+            </div>
+            <textarea id="scannedLinksInput" readonly placeholder="Link đã đọc nội dung sẽ tự động lưu tại đây..."></textarea>
+            <div class="row">
+              <span class="hint">Danh sách được lưu trên trình duyệt của web GitHub Pages.</span>
+              <button class="btn btn-danger btn-sm" id="clearScannedLinksBtn" type="button">Xoá danh sách đã quét</button>
+            </div>
+          </div>
+        </div>
+      </section>
     </section>
   </main>
   <div class="toast-host" id="toastHost"></div>

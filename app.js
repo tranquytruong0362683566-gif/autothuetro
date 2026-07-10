@@ -16,7 +16,7 @@ const APP = {
     groupLimit: 'truong_ai_commenter_group_limit_v1',
     loopPauseSeconds: 'truong_ai_commenter_loop_pause_seconds_v1',
     linkPauseSeconds: 'truong_ai_commenter_link_pause_seconds_v1',
-    commentedLinks: 'truong_ai_commenter_commented_links_v1'
+    scannedLinks: 'truong_ai_commenter_scanned_group_links_v2'
   }
 };
 
@@ -41,8 +41,9 @@ const els = {
   stopGroupLoopBtn: $('#stopGroupLoopBtn'),
   groupScanStatus: $('#groupScanStatus'),
   scanConfigSummary: $('#scanConfigSummary'),
-  commentedLinksInput: $('#commentedLinksInput'),
-  clearCommentedLinksBtn: $('#clearCommentedLinksBtn'),
+  scannedLinksInput: $('#scannedLinksInput'),
+  scannedLinksCounter: $('#scannedLinksCounter'),
+  clearScannedLinksBtn: $('#clearScannedLinksBtn'),
   productLinkInput: $('#productLinkInput'),
   toneSelect: $('#toneSelect'),
   commentModeSelect: $('#commentModeSelect'),
@@ -91,7 +92,6 @@ const els = {
   selectedImage: $('#selectedImage'),
   selectedTitle: $('#selectedTitle'),
   selectedMeta: $('#selectedMeta'),
-  runLog: $('#runLog'),
   toastHost: $('#toastHost')
 };
 
@@ -145,8 +145,7 @@ function setOutput(message, className = '') {
 }
 function logLine(message) {
   const time = new Date().toLocaleTimeString('vi-VN');
-  els.runLog.textContent += (els.runLog.textContent === 'Chưa chạy link Facebook.' ? '' : '\n') + `[${time}] ${message}`;
-  els.runLog.scrollTop = els.runLog.scrollHeight;
+  console.info(`[${time}] ${message}`);
 }
 
 function openDb() {
@@ -440,37 +439,38 @@ function uniqueUrls(list) {
   }
   return out;
 }
-function getCommentedLinks() {
-  return uniqueUrls(loadStorage(APP.storage.commentedLinks, []));
+function getScannedLinks() {
+  return uniqueUrls(loadStorage(APP.storage.scannedLinks, []));
 }
-function saveCommentedLinks(list) {
-  saveStorage(APP.storage.commentedLinks, uniqueUrls(list));
-  renderCommentedLinks();
+function saveScannedLinks(list) {
+  saveStorage(APP.storage.scannedLinks, uniqueUrls(list).slice(0, 5000));
+  renderScannedLinks();
 }
-function renderCommentedLinks() {
-  if (!els.commentedLinksInput) return;
-  els.commentedLinksInput.value = getCommentedLinks().join('\n');
+function renderScannedLinks() {
+  const list = getScannedLinks();
+  if (els.scannedLinksInput) els.scannedLinksInput.value = list.join('\n');
+  if (els.scannedLinksCounter) els.scannedLinksCounter.textContent = `${list.length} link`;
 }
-function markLinkDone(url) {
+function markLinkScanned(url) {
   const clean = normalizeFacebookUrl(url);
   if (!clean) return;
-  const list = getCommentedLinks();
+  const list = getScannedLinks();
   const key = normalizedUrlKey(clean);
   if (!list.some(item => normalizedUrlKey(item) === key)) list.unshift(clean);
-  saveCommentedLinks(list.slice(0, 2000));
+  saveScannedLinks(list);
 }
-function filterUncommentedLinks(list) {
-  const done = new Set(getCommentedLinks().map(normalizedUrlKey));
-  return uniqueUrls(list).filter(link => !done.has(normalizedUrlKey(link)));
+function filterUnscannedLinks(list) {
+  const scanned = new Set(getScannedLinks().map(normalizedUrlKey));
+  return uniqueUrls(list).filter(link => !scanned.has(normalizedUrlKey(link)));
 }
 function syncUrlInputFiltered() {
-  const next = filterUncommentedLinks(String(els.facebookUrlsInput.value || '').split(/[\n\t ]+/)).join('\n');
+  const next = uniqueUrls(String(els.facebookUrlsInput.value || '').split(/[\n\t ]+/)).join('\n');
   if (els.facebookUrlsInput.value !== next) els.facebookUrlsInput.value = next;
   updateCounters();
   saveDraft();
 }
 function urls() {
-  return filterUncommentedLinks(String(els.facebookUrlsInput.value || '').split(/[\n\t ]+/));
+  return uniqueUrls(String(els.facebookUrlsInput.value || '').split(/[\n\t ]+/));
 }
 function removeUrlFromInput(url) {
   const key = normalizedUrlKey(url);
@@ -576,9 +576,49 @@ function extractMetaArticle(data) {
   const text = description || title;
   return field(String(text || '').replace(/\s+/g, ' '));
 }
+async function portableHttpRequest(url, options = {}) {
+  try {
+    const response = await fetch(url, options);
+    const bodyText = await response.text();
+    return {
+      ok: response.ok,
+      status: response.status,
+      statusText: response.statusText,
+      contentType: response.headers.get('content-type') || '',
+      bodyText
+    };
+  } catch (directError) {
+    try {
+      const proxyResult = await sendExt({
+        type: 'HTTP_JSON_REQUEST',
+        url,
+        method: options.method || 'GET',
+        headers: options.headers || {},
+        body: options.body || ''
+      }, 120000);
+      return { ...proxyResult, ok: proxyResult.httpOk !== false };
+    } catch (extensionError) {
+      throw new Error(`Không gọi được API từ GitHub Pages: ${getErrorText(extensionError) || getErrorText(directError)}`);
+    }
+  }
+}
+function parsePortableBody(result) {
+  if (String(result.contentType || '').includes('application/json')) {
+    try { return JSON.parse(result.bodyText || 'null'); } catch {}
+  }
+  return result.bodyText || '';
+}
 async function fetchArticleByMetaApi(url) {
-  const response = await sendExt({ type: 'HTTP_META_EXTRACT', url }, 60000);
-  const article = extractMetaArticle(response.data);
+  const result = await portableHttpRequest(APP.metaApiUrl, {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json, text/plain, */*',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ urls: [url] })
+  });
+  if (!result.ok) throw new Error(`${result.status} ${result.statusText}: ${String(result.bodyText || '').slice(0, 1200)}`);
+  const article = extractMetaArticle(parsePortableBody(result));
   if (!article) throw new Error('API không trả về title/description hợp lệ cho link này.');
   return article;
 }
@@ -597,6 +637,8 @@ async function fetchArticleApiToInput() {
   try {
     const article = await fetchArticleByMetaApi(url);
     els.articleInput.value = article.slice(0, 8000);
+    markLinkScanned(url);
+    removeUrlFromInput(url);
     updateCounters();
     saveDraft();
     logLine(`🌐 API đã lấy nội dung: ${article.slice(0, 140).replace(/\s+/g, ' ')}${article.length > 140 ? '...' : ''}`);
@@ -693,13 +735,14 @@ async function readErrorBody(response) {
   }
 }
 async function callChatCompletions({ apiKey, model, prompt }) {
-  const response = await sendExt({
-    type: 'HTTP_FLATKEY_CHAT',
-    apiKey,
-    model,
-    prompt
-  }, 120000);
-  const text = extractResponseText(response.data);
+  const result = await portableHttpRequest(APP.defaultApiUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+    body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }] })
+  });
+  if (!result.ok) throw new Error(`${result.status} ${result.statusText}: ${String(result.bodyText || '').slice(0, 1600)}`);
+  const data = parsePortableBody(result);
+  const text = extractResponseText(data);
   if (!field(text)) throw new Error('API trả về rỗng.');
   return text;
 }
@@ -981,88 +1024,74 @@ async function copyText(text, options = {}) {
     return ok;
   }
 }
-const WEB_BRIDGE_CHANNEL = 'PHONGTRO_EXTENSION_BRIDGE_V1';
+const EXT_BRIDGE_REQUEST = 'PHONGTRO_WEB_TO_EXTENSION_V1';
+const EXT_BRIDGE_RESPONSE = 'PHONGTRO_EXTENSION_TO_WEB_V1';
 const bridgeRequests = new Map();
-let bridgeReady = false;
+let bridgeDetected = false;
 
 window.addEventListener('message', event => {
   if (event.source !== window || event.origin !== window.location.origin) return;
-  const data = event.data;
-  if (!data || data.channel !== WEB_BRIDGE_CHANNEL || data.source !== 'PHONGTRO_EXTENSION') return;
-
-  if (data.kind === 'READY') {
-    bridgeReady = true;
-    window.dispatchEvent(new CustomEvent('phongtro-extension-ready'));
+  const data = event.data || {};
+  if (data.channel === EXT_BRIDGE_RESPONSE && data.ready === true) {
+    bridgeDetected = true;
     return;
   }
-
-  if (data.kind !== 'RESPONSE' || !data.requestId) return;
+  if (data.channel !== EXT_BRIDGE_RESPONSE || !data.requestId) return;
+  bridgeDetected = true;
   const pending = bridgeRequests.get(data.requestId);
   if (!pending) return;
   bridgeRequests.delete(data.requestId);
   clearTimeout(pending.timer);
-
-  const response = data.response;
-  if (!response?.ok) pending.reject(new Error(response?.error || 'Extension không phản hồi đúng.'));
+  const response = data.response || {};
+  if (!response.ok) pending.reject(new Error(response.error || 'Extension không phản hồi đúng.'));
   else pending.resolve(response);
 });
 
 function directExtensionReady() {
-  return window.location.protocol === 'chrome-extension:' &&
-    typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage;
+  return typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage;
 }
 function extensionReady() {
-  return directExtensionReady() || bridgeReady;
-}
-function sendExtDirect(message, timeout) {
-  return new Promise((resolve, reject) => {
-    let settled = false;
-    const timer = setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      reject(new Error('Extension xử lý quá lâu hoặc đã bị ngắt.'));
-    }, timeout);
-    chrome.runtime.sendMessage(message, response => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      const err = chrome.runtime.lastError;
-      if (err) return reject(new Error(err.message));
-      if (!response?.ok) return reject(new Error(response?.error || 'Extension không phản hồi đúng.'));
-      resolve(response);
-    });
-  });
-}
-function sendExtBridge(message, timeout) {
-  return new Promise((resolve, reject) => {
-    const requestId = `req_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-    const timer = setTimeout(() => {
-      bridgeRequests.delete(requestId);
-      reject(new Error('Không kết nối được Extension. Hãy mở biểu tượng tiện ích, lưu đúng URL GitHub Pages rồi tải lại trang.'));
-    }, timeout);
-    bridgeRequests.set(requestId, { resolve, reject, timer });
-    window.postMessage({
-      channel: WEB_BRIDGE_CHANNEL,
-      source: 'PHONGTRO_WEB',
-      kind: 'REQUEST',
-      requestId,
-      message
-    }, window.location.origin);
-  });
+  return directExtensionReady() || bridgeDetected;
 }
 function sendExt(message, timeout = 120000) {
-  return directExtensionReady()
-    ? sendExtDirect(message, timeout)
-    : sendExtBridge(message, timeout);
+  if (directExtensionReady()) {
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        reject(new Error('Extension xử lý quá lâu hoặc đã bị ngắt.'));
+      }, timeout);
+      chrome.runtime.sendMessage(message, response => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        const err = chrome.runtime.lastError;
+        if (err) return reject(new Error(err.message));
+        if (!response?.ok) return reject(new Error(response?.error || 'Extension không phản hồi đúng.'));
+        resolve(response);
+      });
+    });
+  }
+
+  return new Promise((resolve, reject) => {
+    const requestId = `pt_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const timer = setTimeout(() => {
+      bridgeRequests.delete(requestId);
+      reject(new Error('Không kết nối được Extension. Hãy cài Extension rồi tải lại trang GitHub Pages.'));
+    }, timeout);
+    bridgeRequests.set(requestId, { resolve, reject, timer });
+    window.postMessage({ channel: EXT_BRIDGE_REQUEST, requestId, message }, window.location.origin);
+  });
 }
 async function closeTabIfNeeded(tabId) {
   if (!els.closeTabCheckbox.checked || !tabId) return;
   try { await sendExt({ type: 'FB_CLOSE_TAB', tabId }, 15000); } catch {}
 }
 async function checkExtension() {
+  els.extensionBadge.textContent = '🧩 Đang kết nối Extension...';
   try {
     const response = await sendExt({ type: 'PING' }, 8000);
-    bridgeReady = true;
     els.extensionBadge.textContent = `🧩 Extension sẵn sàng${response.version ? ' · v' + response.version : ''}`;
     els.extensionBadge.style.background = '#ecfdf3';
     els.extensionBadge.style.borderColor = '#bbf7d0';
@@ -1107,8 +1136,8 @@ async function scanGroupLinksToInput({ silent = false } = {}) {
     closeAfter: true
   }, 15 * 60 * 1000);
 
-  const found = filterUncommentedLinks(response.links || response.urls || response.postLinks || []);
-  const merged = filterUncommentedLinks([...urls(), ...found]);
+  const found = filterUnscannedLinks(response.links || response.urls || response.postLinks || []);
+  const merged = uniqueUrls([...urls(), ...found]);
   els.facebookUrlsInput.value = merged.join('\n');
   updateCounters();
   saveDraft();
@@ -1149,18 +1178,17 @@ async function processOneFacebookUrl(url, index = 0, total = 1) {
     saveDraft();
     logLine(`✅ API đã trả về: ${article.slice(0, 140).replace(/\s+/g, ' ')}${article.length > 140 ? '...' : ''}`);
   } catch (error) {
-    logLine(`❌ API không lấy được tiêu đề/nội dung, bỏ qua link này: ${getErrorText(error)}`);
-    markLinkDone(url);
-    removeUrlFromInput(url);
+    logLine(`❌ API không lấy được tiêu đề/nội dung, giữ link để lần sau đọc lại: ${getErrorText(error)}`);
     return { ok: false, skipped: true, error: getErrorText(error) };
   }
 
   if (!field(article)) {
-    logLine('⚠️ API trả về rỗng, bỏ qua link này.');
-    markLinkDone(url);
-    removeUrlFromInput(url);
+    logLine('⚠️ API trả về rỗng, giữ link để lần sau đọc lại.');
     return { ok: false, skipped: true, error: 'empty_article' };
   }
+
+  markLinkScanned(url);
+  removeUrlFromInput(url);
 
   let ai = null;
   try {
@@ -1168,8 +1196,6 @@ async function processOneFacebookUrl(url, index = 0, total = 1) {
     ai = await aiCreateComment(article);
   } catch (error) {
     logLine(`❌ Lỗi AI: ${getErrorText(error)}`);
-    markLinkDone(url);
-    removeUrlFromInput(url);
     return { ok: false, skipped: true, error: getErrorText(error) };
   }
 
@@ -1177,15 +1203,11 @@ async function processOneFacebookUrl(url, index = 0, total = 1) {
     showSelected(null);
     setOutput('next', 'placeholder');
     logLine('↪️ AI trả về next: bỏ qua comment và chạy link kế tiếp ngay.');
-    markLinkDone(url);
-    removeUrlFromInput(url);
     return { ok: true, skipped: true, reason: 'next' };
   }
 
   if (!field(ai.comment)) {
     logLine('⚠️ AI trả về comment rỗng, bỏ qua link này.');
-    markLinkDone(url);
-    removeUrlFromInput(url);
     return { ok: false, skipped: true, error: 'empty_comment' };
   }
 
@@ -1211,16 +1233,14 @@ async function processOneFacebookUrl(url, index = 0, total = 1) {
     if (!sent.textVerified) throw new Error('Facebook chưa xác nhận văn bản được dán đúng cấu trúc.');
     if (requireImage && !sent.imageAttached) throw new Error('Ảnh của mẫu AI chọn chưa được gắn vào bình luận.');
     logLine(`✅ Đã gửi comment${sent.imageAttached ? ' kèm đúng ảnh mẫu' : ' dạng chữ'}: ${ai.comment.slice(0, 100)}${ai.comment.length > 100 ? '...' : ''}`);
-    markLinkDone(url);
-    removeUrlFromInput(url);
     return { ok: true, skipped: false };
   } catch (error) {
-    logLine(`❌ Lỗi comment: ${getErrorText(error)}. Link được giữ lại để chạy lại.`);
+    logLine(`❌ Lỗi comment: ${getErrorText(error)}. Link đã được ghi vào danh sách đã quét vì nội dung bài đã đọc xong.`);
     return { ok: false, skipped: true, error: getErrorText(error) };
   }
 }
 async function runFacebookLinksQueue(list, { clearLog = true, manageRunning = true } = {}) {
-  const queue = filterUncommentedLinks(list);
+  const queue = uniqueUrls(list);
   if (!queue.length) {
     toast('Không có link Facebook mới để chạy.', 'warning');
     return;
@@ -1244,7 +1264,7 @@ async function runFacebookLinksQueue(list, { clearLog = true, manageRunning = tr
     els.runExistingLinksBtn.textContent = '⏳ Đang chạy link hiện có...';
   }
   els.runFacebookBtn.textContent = '⏳ Đang chạy...';
-  if (clearLog) els.runLog.textContent = '';
+  if (clearLog && els.runLog) els.runLog.textContent = '';
 
   try {
     for (let i = 0; i < queue.length; i++) {
@@ -1280,7 +1300,7 @@ async function runClosedGroupLoop() {
 
   isRunning = true;
   groupLoopRunning = true;
-  els.runLog.textContent = '';
+  if (els.runLog) els.runLog.textContent = '';
   els.autoGroupLoopBtn.disabled = true;
   els.autoGroupLoopBtn.textContent = '⏳ Đang chạy quy trình...';
   els.scanGroupLinksBtn.disabled = true;
@@ -1394,7 +1414,7 @@ function wire() {
   els.autoGroupLoopBtn?.addEventListener('click', runClosedGroupLoop);
   els.runExistingLinksBtn?.addEventListener('click', runFacebookLinks);
   els.stopGroupLoopBtn?.addEventListener('click', () => { groupLoopRunning = false; setGroupStatus('Đang dừng vòng lặp...', 'warn'); });
-  els.clearCommentedLinksBtn?.addEventListener('click', () => { saveCommentedLinks([]); syncUrlInputFiltered(); setGroupStatus('Đã xoá danh sách link đã chạy.', 'ok'); });
+  els.clearScannedLinksBtn?.addEventListener('click', () => { saveScannedLinks([]); setGroupStatus('Đã xoá danh sách link đã quét ở nhóm.', 'ok'); toast('Đã xoá danh sách link đã quét'); });
   els.clearBtn.addEventListener('click', clearArticleAndUrls);
   els.copyBtn.addEventListener('click', () => copyText(els.output.textContent));
   els.saveHistoryBtn.addEventListener('click', saveHistory);
@@ -1441,10 +1461,9 @@ async function init() {
     wire();
     updateCounters();
     await renderListings();
-    renderCommentedLinks();
+    renderScannedLinks();
     syncUrlInputFiltered();
     checkExtension();
-    window.addEventListener('phongtro-extension-ready', checkExtension, { once: true });
   } catch (error) {
     console.error(error);
     alert('Lỗi khởi tạo giao diện: ' + getErrorText(error));
