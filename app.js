@@ -5,6 +5,7 @@ const APP = {
   defaultApiUrl: 'https://console.flatkey.ai/v1/chat/completions',
   metaApiUrl: 'https://rakko.tools/api/tools/meta-extractor/extractMeta',
   defaultModel: 'gpt-4o-mini',
+  fixedExtensionId: 'fegidjoncepnihnnfddbaipddleabaom',
   dbName: 'phongtro_ai_commenter_v10',
   dbVersion: 1,
   storage: {
@@ -496,13 +497,14 @@ function numberInputValue(el, fallback, min, max) {
 }
 function getScanMode() {
   const mode = field(els.scanSourceModeSelect?.value) || 'group_latest';
-  return ['group_latest', 'group_top', 'groups_feed', 'home_feed'].includes(mode) ? mode : 'group_latest';
+  const normalized = mode === 'groups_feed' ? 'group_feed' : mode;
+  return ['group_latest', 'group_top', 'group_feed', 'home_feed'].includes(normalized) ? normalized : 'group_latest';
 }
 function scanModeNeedsGroup(mode) {
   return mode === 'group_latest' || mode === 'group_top';
 }
 function scanModeLabel(mode) {
-  return ({ group_latest: 'Bài viết mới', group_top: 'Bài viết Top', groups_feed: 'Bản Tin Nhóm', home_feed: 'Bài Viết Trang Chủ' })[mode] || 'Bài viết mới';
+  return ({ group_latest: 'Bài viết mới', group_top: 'Bài viết Top', group_feed: 'Bản Tin Nhóm', groups_feed: 'Bản Tin Nhóm', home_feed: 'Bài Viết Trang Chủ' })[mode] || 'Bài viết mới';
 }
 function setGroupStatus(message, type = 'warn') {
   if (!els.groupScanStatus) return;
@@ -1132,10 +1134,13 @@ async function copyText(text, options = {}) {
   }
 }
 function normalizeExtensionId(value) {
-  return String(value || '').trim().replace(/[^a-p]/gi, '').toLowerCase();
+  const raw = String(value || '').trim().toLowerCase();
+  const exact = raw.match(/[a-p]{32}/);
+  if (exact) return exact[0];
+  return raw.replace(/[^a-p]/g, '');
 }
 function getExtensionId() {
-  return normalizeExtensionId(els.extensionIdInput?.value || loadStorage(APP.storage.extensionId, ''));
+  return normalizeExtensionId(els.extensionIdInput?.value || loadStorage(APP.storage.extensionId, '') || APP.fixedExtensionId);
 }
 function saveExtensionId(options = {}) {
   const id = getExtensionId();
@@ -1150,19 +1155,27 @@ function saveExtensionId(options = {}) {
   return true;
 }
 function restoreExtensionId() {
-  if (els.extensionIdInput) els.extensionIdInput.value = normalizeExtensionId(loadStorage(APP.storage.extensionId, ''));
+  if (!els.extensionIdInput) return;
+  const saved = normalizeExtensionId(loadStorage(APP.storage.extensionId, ''));
+  const id = saved || APP.fixedExtensionId;
+  els.extensionIdInput.value = id;
+  if (!saved && id) saveStorage(APP.storage.extensionId, id);
 }
 function directExtensionReady() {
-  return typeof chrome !== 'undefined' && !!chrome.runtime?.sendMessage;
+  return !!globalThis.chrome?.runtime?.sendMessage;
 }
 function extensionReady() {
   return directExtensionReady() && getExtensionId().length === 32;
+}
+function extensionOriginHelp() {
+  const origin = location.protocol === 'file:' ? 'file:// local' : location.origin;
+  return `Origin hiện tại: ${origin}. Bản extension đã mở quyền cho GitHub Pages, Cloudflare Pages, Netlify, Vercel, localhost và 127.0.0.1. Nếu mở file HTML trực tiếp bằng file:// thì hãy đưa WEB_GITHUB lên GitHub Pages hoặc chạy bằng localhost.`;
 }
 function sendExt(message, timeout = 120000) {
   const extensionId = getExtensionId();
   if (!extensionId) return Promise.reject(new Error('Chưa nhập Extension ID. Mở Extension, sao chép ID rồi dán vào Cài đặt nâng cao.'));
   if (extensionId.length !== 32) return Promise.reject(new Error('Extension ID không hợp lệ. ID phải có đúng 32 ký tự từ a đến p.'));
-  if (!directExtensionReady()) return Promise.reject(new Error('Trình duyệt không hỗ trợ kết nối Extension trực tiếp. Hãy mở web bằng Google Chrome hoặc Microsoft Edge.'));
+  if (!directExtensionReady()) return Promise.reject(new Error('Trang hiện tại chưa được Chrome cấp API chrome.runtime để gọi Extension. ' + extensionOriginHelp()));
   return new Promise((resolve, reject) => {
     let settled = false;
     const timer = setTimeout(() => {
@@ -1175,7 +1188,7 @@ function sendExt(message, timeout = 120000) {
       settled = true;
       clearTimeout(timer);
       const err = chrome.runtime.lastError;
-      if (err) return reject(new Error(`Không kết nối được Extension ID ${extensionId}: ${err.message}`));
+      if (err) return reject(new Error(`Không kết nối được Extension ID ${extensionId}: ${err.message}. ${extensionOriginHelp()}`));
       if (!response?.ok) return reject(new Error(response?.error || 'Extension không phản hồi đúng.'));
       resolve(response);
     });
@@ -1212,8 +1225,8 @@ async function checkExtension() {
 async function ensureExtensionReady() {
   try {
     return await checkExtension();
-  } catch {
-    throw new Error('Chưa kết nối Extension. Hãy nhập đúng Extension ID, bật Extension rồi bấm kiểm tra lại.');
+  } catch (error) {
+    throw new Error('Chưa kết nối Extension. Hãy nhập đúng Extension ID, bật Extension rồi bấm kiểm tra lại. Chi tiết: ' + getErrorText(error));
   }
 }
 async function preflightBeforeRun() {
@@ -1243,6 +1256,7 @@ async function scanGroupLinksToInput({ silent = false } = {}) {
     scanMode,
     sourceMode: scanMode,
     feedMode: scanMode,
+    maxRounds: 35,
     limit,
     limitPerGroup: limit,
     perGroupLimit: limit,
