@@ -1,7 +1,7 @@
 'use strict';
 
 const APP = {
-  version: '10.1.20',
+  version: '10.1.21',
   defaultApiUrl: 'https://console.flatkey.ai/v1/chat/completions',
   metaApiUrl: 'https://rakko.tools/api/tools/meta-extractor/extractMeta',
   defaultModel: 'gpt-4o-mini',
@@ -17,7 +17,8 @@ const APP = {
     groupLimit: 'truong_ai_commenter_group_limit_v1',
     loopPauseSeconds: 'truong_ai_commenter_loop_pause_seconds_v1',
     linkPauseSeconds: 'truong_ai_commenter_link_pause_seconds_v1',
-    scannedLinks: 'truong_ai_commenter_scanned_group_links_v2'
+    scannedLinks: 'truong_ai_commenter_scanned_group_links_v2',
+    extensionId: 'truong_ai_commenter_extension_id_v1'
   }
 };
 
@@ -89,6 +90,8 @@ const els = {
   fallbackTextCheckbox: $('#fallbackTextCheckbox'),
   closeTabCheckbox: $('#closeTabCheckbox'),
   extensionBadge: $('#extensionBadge'),
+  extensionIdInput: $('#extensionIdInput'),
+  saveExtensionIdBtn: $('#saveExtensionIdBtn'),
   selectedBox: $('#selectedBox'),
   selectedImage: $('#selectedImage'),
   selectedTitle: $('#selectedTitle'),
@@ -1128,64 +1131,54 @@ async function copyText(text, options = {}) {
     return ok;
   }
 }
-const EXT_BRIDGE_REQUEST = 'PHONGTRO_WEB_TO_EXTENSION_V1';
-const EXT_BRIDGE_RESPONSE = 'PHONGTRO_EXTENSION_TO_WEB_V1';
-const bridgeRequests = new Map();
-let bridgeDetected = false;
-
-window.addEventListener('message', event => {
-  if (event.source !== window || event.origin !== window.location.origin) return;
-  const data = event.data || {};
-  if (data.channel === EXT_BRIDGE_RESPONSE && data.ready === true) {
-    bridgeDetected = true;
-    return;
+function normalizeExtensionId(value) {
+  return String(value || '').trim().replace(/[^a-p]/gi, '').toLowerCase();
+}
+function getExtensionId() {
+  return normalizeExtensionId(els.extensionIdInput?.value || loadStorage(APP.storage.extensionId, ''));
+}
+function saveExtensionId(options = {}) {
+  const id = getExtensionId();
+  if (id && id.length !== 32) {
+    if (!options.silent) toast('Extension ID phải gồm đúng 32 ký tự từ a đến p.', 'warning');
+    return false;
   }
-  if (data.channel !== EXT_BRIDGE_RESPONSE || !data.requestId) return;
-  bridgeDetected = true;
-  const pending = bridgeRequests.get(data.requestId);
-  if (!pending) return;
-  bridgeRequests.delete(data.requestId);
-  clearTimeout(pending.timer);
-  const response = data.response || {};
-  if (!response.ok) pending.reject(new Error(response.error || 'Extension không phản hồi đúng.'));
-  else pending.resolve(response);
-});
-
+  saveStorage(APP.storage.extensionId, id);
+  if (els.extensionIdInput) els.extensionIdInput.value = id;
+  extensionInfo = { ready: false, version: '' };
+  if (!options.silent) toast(id ? 'Đã lưu Extension ID' : 'Đã xoá Extension ID');
+  return true;
+}
+function restoreExtensionId() {
+  if (els.extensionIdInput) els.extensionIdInput.value = normalizeExtensionId(loadStorage(APP.storage.extensionId, ''));
+}
 function directExtensionReady() {
-  return typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage;
+  return typeof chrome !== 'undefined' && !!chrome.runtime?.sendMessage;
 }
 function extensionReady() {
-  return directExtensionReady() || bridgeDetected;
+  return directExtensionReady() && getExtensionId().length === 32;
 }
 function sendExt(message, timeout = 120000) {
-  if (directExtensionReady()) {
-    return new Promise((resolve, reject) => {
-      let settled = false;
-      const timer = setTimeout(() => {
-        if (settled) return;
-        settled = true;
-        reject(new Error('Extension xử lý quá lâu hoặc đã bị ngắt.'));
-      }, timeout);
-      chrome.runtime.sendMessage(message, response => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        const err = chrome.runtime.lastError;
-        if (err) return reject(new Error(err.message));
-        if (!response?.ok) return reject(new Error(response?.error || 'Extension không phản hồi đúng.'));
-        resolve(response);
-      });
-    });
-  }
-
+  const extensionId = getExtensionId();
+  if (!extensionId) return Promise.reject(new Error('Chưa nhập Extension ID. Mở Extension, sao chép ID rồi dán vào Cài đặt nâng cao.'));
+  if (extensionId.length !== 32) return Promise.reject(new Error('Extension ID không hợp lệ. ID phải có đúng 32 ký tự từ a đến p.'));
+  if (!directExtensionReady()) return Promise.reject(new Error('Trình duyệt không hỗ trợ kết nối Extension trực tiếp. Hãy mở web bằng Google Chrome hoặc Microsoft Edge.'));
   return new Promise((resolve, reject) => {
-    const requestId = `pt_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    let settled = false;
     const timer = setTimeout(() => {
-      bridgeRequests.delete(requestId);
-      reject(new Error('Không kết nối được Extension. Hãy cài Extension rồi tải lại trang GitHub Pages.'));
+      if (settled) return;
+      settled = true;
+      reject(new Error('Extension xử lý quá lâu hoặc đã bị ngắt.'));
     }, timeout);
-    bridgeRequests.set(requestId, { resolve, reject, timer });
-    window.postMessage({ channel: EXT_BRIDGE_REQUEST, requestId, message }, window.location.origin);
+    chrome.runtime.sendMessage(extensionId, message, response => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      const err = chrome.runtime.lastError;
+      if (err) return reject(new Error(`Không kết nối được Extension ID ${extensionId}: ${err.message}`));
+      if (!response?.ok) return reject(new Error(response?.error || 'Extension không phản hồi đúng.'));
+      resolve(response);
+    });
   });
 }
 async function closeTabIfNeeded(tabId) {
@@ -1220,7 +1213,7 @@ async function ensureExtensionReady() {
   try {
     return await checkExtension();
   } catch {
-    throw new Error('Chưa kết nối Extension. Hãy cài/bật Extension, cho phép Extension chạy trên trang web này rồi bấm lại trạng thái kết nối.');
+    throw new Error('Chưa kết nối Extension. Hãy nhập đúng Extension ID, bật Extension rồi bấm kiểm tra lại.');
   }
 }
 async function preflightBeforeRun() {
@@ -1552,6 +1545,19 @@ function requireElements() {
   if (missing.length) throw new Error('Thiếu phần tử giao diện: ' + missing.join(', '));
 }
 function wire() {
+  els.saveExtensionIdBtn?.addEventListener('click', async () => {
+    if (!saveExtensionId()) return;
+    try { await checkExtension(); toast('Extension ID hợp lệ và đã kết nối', 'success'); }
+    catch (error) { toast(getErrorText(error), 'warning'); }
+  });
+  els.extensionIdInput?.addEventListener('input', () => {
+    const clean = normalizeExtensionId(els.extensionIdInput.value);
+    if (els.extensionIdInput.value !== clean) els.extensionIdInput.value = clean;
+    saveExtensionId({ silent: true });
+  });
+  els.extensionIdInput?.addEventListener('keydown', event => {
+    if (event.key === 'Enter') els.saveExtensionIdBtn?.click();
+  });
   els.extensionBadge.addEventListener('click', async () => {
     try {
       await checkExtension();
@@ -1620,6 +1626,7 @@ async function init() {
   try {
     requireElements();
     restoreApiConfig();
+    restoreExtensionId();
     restoreDraft();
     wire();
     updateCounters();
