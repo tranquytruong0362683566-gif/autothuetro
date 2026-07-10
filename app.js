@@ -1,7 +1,7 @@
 'use strict';
 
 const APP = {
-  version: '10.1.23',
+  version: '10.1.24',
   defaultApiUrl: 'https://console.flatkey.ai/v1/chat/completions',
   metaApiUrl: 'https://rakko.tools/api/tools/meta-extractor/extractMeta',
   defaultModel: 'gpt-4o-mini',
