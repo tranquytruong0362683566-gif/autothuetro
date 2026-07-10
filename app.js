@@ -1,7 +1,7 @@
 'use strict';
 
 const APP = {
-  version: '10.1.21',
+  version: '10.1.23',
   defaultApiUrl: 'https://console.flatkey.ai/v1/chat/completions',
   metaApiUrl: 'https://rakko.tools/api/tools/meta-extractor/extractMeta',
   defaultModel: 'gpt-4o-mini',
@@ -698,12 +698,14 @@ async function fetchArticleByMetaApi(url) {
 async function fetchArticleSmart(url) {
   try {
     const response = await sendExt({
-      type: 'READ_FB_POST_TITLE',
-      action: 'READ_FB_POST_TITLE',
+      type: 'READ_FB_POST_BY_API',
+      action: 'READ_FB_POST_BY_API',
       url,
       link: url,
-      delayMs: 5000,
+      delayMs: 30000,
+      timeoutMs: 30000,
       maxChars: 8000,
+      useRakkoApi: true,
       openInBackground: true,
       active: false,
       closeAfter: true,
@@ -714,7 +716,7 @@ async function fetchArticleSmart(url) {
     const article = extractArticleFromExtensionResponse(response);
     if (article) return article;
   } catch (error) {
-    logLine(`Extension chưa đọc trực tiếp được bài, chuyển sang API dự phòng: ${getErrorText(error)}`);
+    logLine(`Extension/Rakko API chưa đọc được bài, chuyển sang API dự phòng từ web: ${getErrorText(error)}`);
   }
   return fetchArticleByMetaApi(url);
 }
@@ -738,7 +740,7 @@ async function fetchArticleApiToInput() {
     updateCounters();
     saveDraft();
     logLine(`🌐 API đã lấy nội dung: ${article.slice(0, 140).replace(/\s+/g, ' ')}${article.length > 140 ? '...' : ''}`);
-    toast('Đã lấy nội dung bài viết bằng API');
+    toast('Đã lấy Nội dung bài viết gốc bằng API');
   } catch (error) {
     const message = getErrorText(error);
     logLine(`❌ API lấy nội dung lỗi: ${message}`);
@@ -1303,7 +1305,7 @@ async function scanGroupLinksManual() {
   }
 }
 async function processOneFacebookUrl(url, index = 0, total = 1) {
-  logLine(`(${index}/${total}) Lấy tiêu đề/nội dung bằng API: ${url}`);
+  logLine(`(${index}/${total}) Lấy Nội dung bài viết gốc bằng Rakko API: ${url}`);
 
   let article = '';
   try {
@@ -1313,7 +1315,7 @@ async function processOneFacebookUrl(url, index = 0, total = 1) {
     saveDraft();
     logLine(`✅ API đã trả về: ${article.slice(0, 140).replace(/\s+/g, ' ')}${article.length > 140 ? '...' : ''}`);
   } catch (error) {
-    logLine(`❌ API không lấy được tiêu đề/nội dung, giữ link để lần sau đọc lại: ${getErrorText(error)}`);
+    logLine(`❌ API không lấy được Nội dung bài viết gốc, giữ link để lần sau đọc lại: ${getErrorText(error)}`);
     return { ok: false, skipped: true, error: getErrorText(error) };
   }
 
